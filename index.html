@@ -24,12 +24,12 @@
     --danger: #ff3b5c;
     --good: #26ffb0;
     --warn: #ffb347;
-    --tap: 50px; /* altura mínima de toque, mobile-first */
+    --tap: 50px;
   }
 
   *{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-  html{ font-size: 16px; } /* evita zoom automático em inputs no iOS */
+  html{ font-size: 16px; }
 
   body{
     margin:0;
@@ -51,7 +51,6 @@
   h1,h2,h3, .num, .lvl-num, .clock{ font-family:'Orbitron', sans-serif; }
   ::selection{ background: rgba(47,111,255,0.4); }
 
-  /* ---------- overlay de perigo ---------- */
   #penalty-overlay{
     display:none; position:fixed; inset:0; z-index:900; pointer-events:none;
     background: radial-gradient(ellipse at 50% 40%, rgba(255,20,50,0.30), rgba(20,0,4,0.6) 75%);
@@ -61,7 +60,6 @@
   @keyframes dangerFlash{ 0%,100%{ opacity:.35; } 50%{ opacity:.8; } }
   @keyframes bodyFlash{ 0%,100%{ background-color:#030509; } 50%{ background-color:#1c0006; } }
 
-  /* ---------- frames "janela do sistema" ---------- */
   .wrap{ max-width: 900px; margin: 0 auto; position:relative; z-index:1; }
 
   .system-frame{
@@ -80,7 +78,6 @@
 
   .eyebrow{ font-family:'Orbitron', sans-serif; font-size:10px; letter-spacing:3px; color: var(--cyan); text-transform:uppercase; opacity:.85; margin: 0 0 4px; }
 
-  /* ---------- relógio do ciclo (fixo no topo, mobile-first) ---------- */
   .cycle-panel{ position: relative; top: 8px; z-index: 50; border-color: var(--line); }
   .clock-label{ font-size:10px; letter-spacing:2px; color:var(--muted); text-transform:uppercase; margin-bottom:4px; }
   .clock{
@@ -100,7 +97,6 @@
   .debug-box .tag{ font-size:9px; letter-spacing:1.5px; color:var(--muted); border:1px dashed var(--muted); padding:3px 7px; text-transform:uppercase; }
   .debug-box small{ color:var(--muted); font-size:11px; }
 
-  /* ---------- status window ---------- */
   .status-head{ display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:10px; margin-bottom: 14px; border-bottom: 1px solid var(--line); padding-bottom: 12px; }
   .status-title{ font-size: 22px; font-weight: 900; letter-spacing: 1.5px; margin: 0; color:#fff; text-shadow: 0 0 18px rgba(47,216,255,0.45); }
   .status-sub{ color: var(--muted); font-size:13px; margin-top:2px;}
@@ -123,7 +119,6 @@
   .attr.attr-drop{ animation: attrDrop .5s ease; }
   @keyframes attrDrop{ 0%{ box-shadow:0 0 0 rgba(255,59,92,0);} 30%{ box-shadow:0 0 18px rgba(255,59,92,.8);} 100%{ box-shadow:0 0 0 rgba(255,59,92,0);} }
 
-  /* ---------- grade de missões (1 coluna no celular, 3 no desktop) ---------- */
   .quests{ display:grid; grid-template-columns: 1fr; gap: 14px; }
 
   .quest-panel{ display:flex; flex-direction:column; }
@@ -134,7 +129,6 @@
   .quest-panel.financas .quest-tag, .quest-panel.financas h2{ color: var(--wis); }
   .quest-head h2{ font-size:16px; margin:0; letter-spacing:.5px; }
 
-  /* esconde/bloqueia estudos e finanças durante a Zona de Penalidade */
   body.penalty-mode #panel-estudos, body.penalty-mode #panel-financas{ display:none; }
 
   .task-list{ list-style:none; margin:0 0 12px; padding:0; display:flex; flex-direction:column; gap:8px; }
@@ -175,6 +169,7 @@
   }
 
   .add-row{ display:flex; gap:8px; margin-top:auto; flex-wrap:wrap; }
+  .add-row.gasto-row { display: grid; grid-template-columns: 2fr 1fr; gap: 8px; }
   .add-row input{ flex:1; min-width:120px; }
 
   input[type=text], input[type=number], input[type=time]{
@@ -199,14 +194,12 @@
   button.danger-btn:hover{ background: rgba(255,59,92,0.22); box-shadow:0 0 12px rgba(255,59,92,.4); }
   button.block{ width:100%; }
 
-  /* ---------- meta semanal de finanças ---------- */
   .divider{ border:none; border-top:1px dashed var(--line); margin:14px 0; }
   .sub-label{ font-size:11px; letter-spacing:1.5px; color:var(--muted); text-transform:uppercase; margin-bottom:8px; }
   .goal-track{ position:relative; height:16px; background:#050810; border:1px solid var(--line); overflow:hidden; margin:8px 0; }
   .goal-fill{ height:100%; background: linear-gradient(90deg, var(--wis), var(--cyan)); transition: width .5s ease; width:0%; }
   .goal-text{ font-size:12px; color:var(--muted); display:flex; justify-content:space-between; }
 
-  /* ---------- painel de punição física ---------- */
   #punishment-panel{ display:none; }
   body.penalty-mode #punishment-panel{ display:block; }
   .punish-title{ font-size:19px; font-weight:900; letter-spacing:1.5px; margin:0 0 4px; color:#fff; position:relative; display:inline-block; }
@@ -227,7 +220,6 @@
   .punish-task.done span{ text-decoration: line-through; opacity:.5; }
   .alarm-row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
 
-  /* ---------- notificações ---------- */
   #notify-stack{ position: fixed; top: 10px; left:50%; transform:translateX(-50%); display:flex; flex-direction:column; gap:8px; z-index:999; align-items:center; width: min(94vw, 420px); }
   .toast{
     width:100%; background: linear-gradient(180deg, rgba(9,14,26,.97), rgba(4,7,14,.97)); border:1px solid var(--glow);
@@ -253,7 +245,6 @@
 
   footer{ text-align:center; color:var(--muted); font-size:11px; margin-top:24px; position:relative; z-index:1; }
 
-  /* ---------- telas maiores (tablet/desktop) ---------- */
   @media (min-width: 700px){
     body{ padding: 28px 16px 80px; }
     .wrap{ max-width: 1180px; }
@@ -295,7 +286,7 @@
     </div>
   </section>
 
-  <!-- PAINEL DE PUNIÇÃO FÍSICA (só aparece na Zona de Penalidade) -->
+  <!-- PAINEL DE PUNIÇÃO FÍSICA -->
   <section class="system-frame" id="punishment-panel">
     <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
     <h2 class="punish-title glitch" data-text="☠ PENALIDADE ATIVADA ☠">☠ PENALIDADE ATIVADA ☠</h2>
@@ -326,7 +317,6 @@
     <div class="exp-track"><div class="exp-fill" id="exp-fill"></div></div>
     <div class="exp-text"><span>EXP</span><span id="exp-text">0 / 100</span></div>
 
-    <!-- atributos ficam ocultos durante a Zona de Penalidade -->
     <div id="status-attrs">
       <div class="attr str" id="attr-str"><span class="attr-name">Força · STR</span><span class="attr-val" id="str-val">10</span></div>
       <div class="attr int" id="attr-int"><span class="attr-name">Inteligência · INT</span><span class="attr-val" id="int-val">10</span></div>
@@ -337,7 +327,7 @@
   <!-- QUESTS -->
   <div class="quests">
 
-    <!-- TREINO (permanece visível; vira punição durante a penalidade) -->
+    <!-- TREINO -->
     <section class="system-frame quest-panel treino" id="panel-treino">
       <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
       <div class="quest-head"><span class="quest-tag">Missão de Força</span></div>
@@ -349,7 +339,7 @@
       </div>
     </section>
 
-    <!-- ESTUDOS (some durante a penalidade) -->
+    <!-- ESTUDOS -->
     <section class="system-frame quest-panel estudos" id="panel-estudos">
       <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
       <div class="quest-head"><span class="quest-tag">Missão de Inteligência</span></div>
@@ -361,7 +351,7 @@
       </div>
     </section>
 
-    <!-- FINANÇAS (Orçamento, Gastos e Meta Semanal) -->
+    <!-- FINANÇAS: META SEMANAL CONECTADA AOS GANHOS E CAPITAL -->
     <section class="system-frame quest-panel financas" id="panel-financas">
       <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
       <div class="quest-head"><span class="quest-tag">Missão de Percepção</span></div>
@@ -371,22 +361,32 @@
         ✅ META SEMANAL CONCLUÍDA — ISENÇÃO ATIVADA
       </div>
 
-      <div class="budget-box" style="margin-top: 8px;">
-        <label for="input-budget" style="font-size:10px; color:var(--muted); letter-spacing:1.5px; text-transform:uppercase;">Orçamento Diário (R$)</label>
-        <input type="number" id="input-budget" placeholder="0,00">
+      <!-- Capital Total (Calculado automaticamente: Ganhos - Gastos) -->
+      <div class="remaining ok" id="remaining-box" style="background:var(--panel-alt); border:1px solid var(--line); padding:12px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:baseline;">
+        <span style="font-size:12px; letter-spacing:1px; text-transform:uppercase;">Capital Total Disponível</span>
+        <span class="num" id="capital-val" style="font-size:20px; font-weight:700; color:var(--cyan);">R$ 0,00</span>
       </div>
 
-      <div class="remaining ok" id="remaining-box" style="background:var(--panel-alt); border:1px solid var(--line); padding:10px 12px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:baseline;">
-        <span style="font-size:13px;">Restante hoje</span>
-        <span class="num" id="remaining-val" style="font-size:18px; font-weight:700;">R$ 0,00</span>
+      <!-- Registrar Ganho (Soma direto no Capital E na Meta Semanal) -->
+      <div class="sub-label">Adicionar Entrada / Ganho</div>
+      <div class="add-row gasto-row" style="margin-bottom: 8px;">
+        <input type="text" id="input-ganho-nome" placeholder="Origem (ex: Salário, Freelance)">
+        <input type="number" id="input-ganho-valor" placeholder="R$">
+      </div>
+      <div style="margin-bottom: 12px;">
+        <button id="btn-add-ganho" class="block" style="border-color:var(--good); color:var(--good); background:rgba(38,255,176,0.1);">+ Registrar Ganho (Soma no Capital & Meta)</button>
       </div>
 
+      <hr class="divider">
+      <div class="sub-label">Gastos Registrados</div>
       <ul class="task-list" id="list-gastos"></ul>
 
-      <div class="add-row" style="margin-bottom: 12px;">
-        <input type="text" id="input-gasto-nome" placeholder="Gasto (ex: Almoço)" style="flex:2;">
-        <input type="number" id="input-gasto-valor" placeholder="R$" style="flex:1;">
-        <button id="btn-add-gasto">Registrar Gasto</button>
+      <div class="add-row gasto-row" style="margin-bottom: 8px;">
+        <input type="text" id="input-gasto-nome" placeholder="Gasto (ex: Almoço)">
+        <input type="number" id="input-gasto-valor" placeholder="R$">
+      </div>
+      <div style="margin-bottom: 12px;">
+        <button id="btn-add-gasto" class="block" style="border-color:var(--danger); color:var(--danger); background:rgba(255,59,92,0.1);">- Registrar Gasto</button>
       </div>
 
       <hr class="divider">
@@ -399,11 +399,6 @@
 
       <div class="goal-track"><div class="goal-fill" id="goal-fill"></div></div>
       <div class="goal-text"><span id="goal-progress-text">R$ 0 / R$ 0</span><span id="goal-status-text"></span></div>
-
-      <div class="add-row">
-        <input type="number" id="input-savings" placeholder="Registrar economia (R$)">
-        <button id="btn-add-savings">Registrar</button>
-      </div>
     </section>
 
   </div>
@@ -413,13 +408,12 @@
 
 <script>
 (function(){
-  const STORAGE_KEY = 'osistema_save_v3';
+  const STORAGE_KEY = 'osistema_save_v8';
 
   function cryptoId(){
     return 'id-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,8);
   }
 
-  // ---------- utilitários de data/semana ----------
   function mondayOf(date){
     const d = new Date(date);
     const day = d.getDay(); 
@@ -432,7 +426,6 @@
     return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
   }
 
-  // ---------- estado padrão ----------
   const defaultState = {
     level: 1,
     exp: 0,
@@ -448,7 +441,7 @@
         { id: cryptoId(), text: 'Praticar algoritmos em JavaScript', done: false }
       ]
     },
-    budget: 0,
+    ganhos: [],
     gastos: [],
     finance: { weeklyGoal: 0, weeklyProgress: 0, weekStart: dateKey(mondayOf(new Date())), exemptionActive: false }
   };
@@ -465,7 +458,7 @@
         cycle: Object.assign({startHour:'06:00', cycleStart:null, cycleEnd:null, resolved:false}, parsed.cycle || {}),
         penalty: Object.assign({active:false, tasks:[]}, parsed.penalty || {}),
         tasks: Object.assign({treino:[],estudos:[]}, parsed.tasks || {}),
-        budget: parsed.budget || 0,
+        ganhos: parsed.ganhos || [],
         gastos: parsed.gastos || [],
         finance: Object.assign({weeklyGoal:0, weeklyProgress:0, weekStart:dateKey(mondayOf(new Date())), exemptionActive:false}, parsed.finance || {})
       });
@@ -478,7 +471,6 @@
   let state = loadState();
   function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
 
-  // ---------- notificações ----------
   function notify(headline, body, variant){
     const stack = document.getElementById('notify-stack');
     const el = document.createElement('div');
@@ -491,7 +483,6 @@
     }, 3800);
   }
 
-  // ---------- leveling progressivo ----------
   function calcExpNeeded(level){ return 100 + (level - 1) * 50; }
 
   function gainExp(amount){
@@ -514,7 +505,6 @@
     el.addEventListener('animationend', ()=> el.classList.remove('attr-drop'), { once:true });
   }
 
-  // ---------- ciclo de 24h ----------
   function computeCycleFromStartHour(startHourStr){
     const [h, m] = startHourStr.split(':').map(Number);
     const now = new Date();
@@ -531,7 +521,6 @@
     state.cycle.resolved = false;
   }
 
-  // ---------- meta semanal de finanças ----------
   function checkWeeklyRollover(){
     const curMonday = dateKey(mondayOf(new Date()));
     if(state.finance.weekStart !== curMonday){
@@ -549,16 +538,6 @@
     save(); render();
   }
 
-  function addSavings(amount){
-    if(isNaN(amount) || amount <= 0) return;
-    state.finance.weeklyProgress += amount;
-    gainAttr('wis', 1);
-    gainExp(5);
-    notify('Aviso do Sistema', `Economia registrada! +5 EXP · +1 WIS`);
-    evaluateExemption();
-    save(); render();
-  }
-
   function evaluateExemption(){
     const goal = state.finance.weeklyGoal;
     if(goal > 0 && state.finance.weeklyProgress >= goal && !state.finance.exemptionActive){
@@ -567,11 +546,9 @@
     }
   }
 
-  // ---------- avanço de dia ----------
   function startNewDay(){
     checkWeeklyRollover();
     ['treino','estudos'].forEach(cat => state.tasks[cat].forEach(t => t.done = false));
-    state.gastos = [];
 
     applyStartHour(state.cycle.startHour);
     state.cycle.resolved = false;
@@ -581,7 +558,6 @@
     save(); render();
   }
 
-  // ---------- avaliação de fim de ciclo ----------
   function resolveCycleEnd(){
     if(state.cycle.resolved) return;
     state.cycle.resolved = true;
@@ -589,11 +565,6 @@
     const incomplete = [];
     if(state.tasks.treino.some(t => !t.done)) incomplete.push('treino');
     if(state.tasks.estudos.some(t => !t.done)) incomplete.push('estudos');
-    
-    // Se a isenção semanal não estiver ativa, exige zerar ou gerenciar o orçamento
-    const totalGasto = state.gastos.reduce((acc, g) => acc + g.valor, 0);
-    const hasBudgetViolation = !state.finance.exemptionActive && (state.budget > 0 && totalGasto > state.budget);
-    if(hasBudgetViolation) incomplete.push('financas');
 
     if(incomplete.length === 0){
       startNewDay();
@@ -603,7 +574,6 @@
     }
   }
 
-  // ---------- Zona de Penalidade ----------
   function doubleNumbers(text){
     return text.replace(/\d+/g, m => String(parseInt(m,10) * 2));
   }
@@ -661,7 +631,6 @@
     save(); render();
   }
 
-  // ---------- áudio (Web Audio API) ----------
   let audioCtx = null;
   let alarmInterval = null;
 
@@ -715,7 +684,6 @@
     });
   }
 
-  // ---------- render ----------
   function pad(n){ return n.toString().padStart(2,'0'); }
   function formatCountdown(ms){
     if(ms < 0) ms = 0;
@@ -799,29 +767,32 @@
     const ul = document.getElementById('list-gastos');
     if(!ul) return;
     ul.innerHTML = '';
-    let totalGasto = 0;
     
+    let totalGanhos = 0;
+    state.ganhos.forEach(g => { totalGanhos += g.valor; });
+
+    let totalGastos = 0;
     state.gastos.forEach(g => {
-      totalGasto += g.valor;
+      totalGastos += g.valor;
       const li = document.createElement('li');
       li.className = 'expense';
       li.style.cssText = 'display:flex; justify-content:space-between; align-items:center; background:var(--panel-alt); border:1px solid var(--line); padding:8px 10px; font-size:14px; margin-bottom:6px;';
       li.innerHTML = `
         <span>${escapeHtml(g.nome)}</span>
-        <span class="val" style="color:var(--wis); font-weight:700;">R$ ${g.valor.toFixed(2)}</span>
+        <span class="val" style="color:var(--danger); font-weight:700;">- R$ ${g.valor.toFixed(2)}</span>
         <button class="del" data-delgasto="${g.id}" title="Remover" style="background:none; border:none; color:var(--muted); cursor:pointer; font-size:16px;">✕</button>
       `;
       ul.appendChild(li);
     });
 
-    const restante = (Number(state.budget) || 0) - totalGasto;
+    // Capital Total = Ganhos menos Gastos
+    const capitalTotal = totalGanhos - totalGastos;
     const box = document.getElementById('remaining-box');
     if(box){
-      box.className = 'remaining ' + (restante >= 0 ? 'ok' : 'warn');
-      document.getElementById('remaining-val').textContent = 'R$ ' + restante.toFixed(2);
+      box.className = 'remaining ' + (capitalTotal >= 0 ? 'ok' : 'warn');
+      document.getElementById('capital-val').textContent = 'R$ ' + capitalTotal.toFixed(2);
+      document.getElementById('capital-val').style.color = capitalTotal >= 0 ? 'var(--good)' : 'var(--danger)';
     }
-    const budgetInput = document.getElementById('input-budget');
-    if(budgetInput) budgetInput.value = state.budget || '';
 
     const exemptBanner = document.getElementById('exempt-banner');
     if(exemptBanner){
@@ -864,7 +835,6 @@
     return div.innerHTML;
   }
 
-  // ---------- ações do jogador ----------
   function addTask(category, text){
     if(state.penalty.active) return;
     if(!text || !text.trim()) return;
@@ -899,6 +869,22 @@
     if(li){ li.classList.add('removing'); setTimeout(commit, 220); } else { commit(); }
   }
   
+  function addGanho(nome, valor){
+    if(state.penalty.active) return;
+    if(!nome || !nome.trim() || isNaN(valor) || valor <= 0) return;
+    
+    // CONEXÃO DIRETA: O ganho vai para o capital E alimenta a meta semanal automaticamente
+    state.ganhos.push({ id: cryptoId(), nome: nome.trim(), valor: Number(valor) });
+    state.finance.weeklyProgress += Number(valor);
+
+    gainAttr('wis', 1);
+    gainExp(5);
+    evaluateExemption();
+    notify('Aviso do Sistema', `Ganho registrado! Somado ao Capital e à Meta Semanal. +5 EXP · +1 WIS`, 'levelup');
+
+    save(); render();
+  }
+
   function addGasto(nome, valor){
     if(state.penalty.active) return;
     if(!nome || !nome.trim() || isNaN(valor) || valor <= 0) return;
@@ -906,7 +892,7 @@
 
     gainAttr('wis', 1);
     gainExp(5);
-    notify('Aviso do Sistema', `Gasto Registrado: Percepção Aumentada! +5 EXP · +1 WIS`);
+    notify('Aviso do Sistema', `Gasto Registrado: Capital Atualizado · +5 EXP · +1 WIS`);
 
     save(); render();
   }
@@ -917,7 +903,6 @@
     save(); render();
   }
 
-  // ---------- eventos ----------
   document.querySelectorAll('button[data-add]').forEach(btn => {
     btn.addEventListener('click', () => {
       const cat = btn.getAttribute('data-add');
@@ -1010,22 +995,15 @@
     });
   }
 
-  const addSavingsBtn = document.getElementById('btn-add-savings');
-  if(addSavingsBtn){
-    addSavingsBtn.addEventListener('click', () => {
-      const input = document.getElementById('input-savings');
-      if(input){
-        addSavings(parseFloat(input.value));
-        input.value = '';
+  const btnAddGanho = document.getElementById('btn-add-ganho');
+  if(btnAddGanho){
+    btnAddGanho.addEventListener('click', () => {
+      const nomeEl = document.getElementById('input-ganho-nome');
+      const valorEl = document.getElementById('input-ganho-valor');
+      if(nomeEl && valorEl){
+        addGanho(nomeEl.value, parseFloat(valorEl.value));
+        nomeEl.value = ''; valorEl.value = '';
       }
-    });
-  }
-
-  const inputBudget = document.getElementById('input-budget');
-  if(inputBudget){
-    inputBudget.addEventListener('change', e => {
-      state.budget = Number(e.target.value) || 0;
-      save(); render();
     });
   }
 
@@ -1046,7 +1024,6 @@
     if(delGasto){ deleteGasto(delGasto.getAttribute('data-delgasto')); }
   });
 
-  // ---------- inicialização ----------
   if(!state.cycle.cycleStart || !state.cycle.cycleEnd){
     applyStartHour(state.cycle.startHour);
     save();
