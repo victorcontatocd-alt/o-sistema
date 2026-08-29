@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>O SISTEMA — Painel do Jogador</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #030509;
+    --panel: #070b14;
+    --panel-alt: #0b111f;
+    --line: #16233a;
+    --glow: #2fd8ff;
+    --blue: #2f6fff;
+    --cyan: #00e5ff;
+    --text: #dbe9ff;
+    --muted: #5f7290;
+    --str: #ff4d5e;
+    --int: #35d0ff;
+    --wis: #b98bff;
+    --danger: #ff3b5c;
+    --good: #26ffb0;
+    --warn: #ffb347;
+    --tap: 50px; /* altura mínima de toque, mobile-first */
+  }
+
+  *{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html{ font-size: 16px; } /* evita zoom automático em inputs no iOS */
+
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(ellipse at 50% -10%, rgba(47,111,255,0.16), transparent 55%),
+      radial-gradient(ellipse at 90% 100%, rgba(0,229,255,0.08), transparent 50%),
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 3px),
+      var(--bg);
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 500;
+    padding: 12px 12px 70px;
+    position: relative;
+    transition: background-color .6s ease;
+  }
+
+  h1,h2,h3, .num, .lvl-num, .clock{ font-family:'Orbitron', sans-serif; }
+  ::selection{ background: rgba(47,111,255,0.4); }
+
+  /* ---------- overlay de perigo ---------- */
+  #penalty-overlay{
+    display:none; position:fixed; inset:0; z-index:900; pointer-events:none;
+    background: radial-gradient(ellipse at 50% 40%, rgba(255,20,50,0.30), rgba(20,0,4,0.6) 75%);
+  }
+  body.penalty-mode #penalty-overlay{ display:block; animation: dangerFlash 1.1s ease-in-out infinite; }
+  body.penalty-mode{ animation: bodyFlash 1.1s ease-in-out infinite; }
+  @keyframes dangerFlash{ 0%,100%{ opacity:.35; } 50%{ opacity:.8; } }
+  @keyframes bodyFlash{ 0%,100%{ background-color:#030509; } 50%{ background-color:#1c0006; } }
+
+  /* ---------- frames "janela do sistema" ---------- */
+  .wrap{ max-width: 900px; margin: 0 auto; position:relative; z-index:1; }
+
+  .system-frame{
+    position: relative;
+    background: linear-gradient(180deg, rgba(11,17,31,0.9), rgba(4,6,12,0.94));
+    border: 1px solid var(--line);
+    padding: 16px 16px;
+    margin-bottom: 16px;
+    clip-path: polygon(0 10px, 10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px));
+  }
+  .corner{ position:absolute; width:14px; height:14px; border-color: var(--glow); opacity:.85; }
+  .corner.tl{ top:-1px; left:-1px; border-top:2px solid var(--glow); border-left:2px solid var(--glow); }
+  .corner.tr{ top:-1px; right:-1px; border-top:2px solid var(--glow); border-right:2px solid var(--glow); }
+  .corner.bl{ bottom:-1px; left:-1px; border-bottom:2px solid var(--glow); border-left:2px solid var(--glow); }
+  .corner.br{ bottom:-1px; right:-1px; border-bottom:2px solid var(--glow); border-right:2px solid var(--glow); }
+
+  .eyebrow{ font-family:'Orbitron', sans-serif; font-size:10px; letter-spacing:3px; color: var(--cyan); text-transform:uppercase; opacity:.85; margin: 0 0 4px; }
+
+  /* ---------- relógio do ciclo (fixo no topo, mobile-first) ---------- */
+  .cycle-panel{ position: relative; top: 8px; z-index: 50; border-color: var(--line); }
+  .clock-label{ font-size:10px; letter-spacing:2px; color:var(--muted); text-transform:uppercase; margin-bottom:4px; }
+  .clock{
+    font-size: clamp(30px, 9vw, 46px); font-weight:900; letter-spacing:2px; line-height:1;
+    color: var(--cyan); text-shadow: 0 0 18px rgba(0,229,255,.5);
+  }
+  .clock.warn{ color: var(--warn); text-shadow:0 0 20px rgba(255,179,71,.6); animation: pulseWarn 1s infinite; }
+  .clock.danger{ color: var(--danger); text-shadow:0 0 24px rgba(255,59,92,.8); animation: pulseWarn .6s infinite; }
+  @keyframes pulseWarn{ 0%,100%{ opacity:1; } 50%{ opacity:.55; } }
+  .cycle-meta{ font-size:11px; color:var(--muted); margin-top:6px; }
+
+  .cycle-config{ display:flex; align-items:flex-end; gap:8px; flex-wrap:wrap; margin-top:12px; }
+  .field-group{ display:flex; flex-direction:column; gap:4px; flex:1; min-width:130px; }
+  .field-group label{ font-size:10px; letter-spacing:1.5px; color:var(--muted); text-transform:uppercase; }
+
+  .debug-box{ margin-top:12px; padding-top:10px; border-top:1px dashed var(--line); display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .debug-box .tag{ font-size:9px; letter-spacing:1.5px; color:var(--muted); border:1px dashed var(--muted); padding:3px 7px; text-transform:uppercase; }
+  .debug-box small{ color:var(--muted); font-size:11px; }
+
+  /* ---------- status window ---------- */
+  .status-head{ display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:10px; margin-bottom: 14px; border-bottom: 1px solid var(--line); padding-bottom: 12px; }
+  .status-title{ font-size: 22px; font-weight: 900; letter-spacing: 1.5px; margin: 0; color:#fff; text-shadow: 0 0 18px rgba(47,216,255,0.45); }
+  .status-sub{ color: var(--muted); font-size:13px; margin-top:2px;}
+
+  .lvl-badge{ display:flex; align-items:center; gap:10px; background: var(--panel-alt); border:1px solid var(--line); padding: 7px 14px; clip-path: polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px); }
+  .lvl-num{ font-size: 26px; font-weight:900; color:var(--cyan); text-shadow:0 0 14px rgba(0,229,255,.6); line-height:1;}
+  .lvl-label{ font-size:10px; letter-spacing:2px; color:var(--muted); text-transform:uppercase; }
+
+  .exp-track{ position:relative; height:14px; background:#050810; border:1px solid var(--line); clip-path: polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px); overflow:hidden; margin-top:6px; }
+  .exp-fill{ height:100%; background: linear-gradient(90deg, var(--blue), var(--cyan)); box-shadow: 0 0 14px rgba(0,229,255,.7); transition: width .6s cubic-bezier(.2,.9,.2,1); width:0%; }
+  .exp-text{ font-size:12px; color:var(--muted); margin-top:4px; display:flex; justify-content:space-between;}
+
+  #status-attrs{ display:grid; grid-template-columns: 1fr; gap: 10px; margin-top:16px; }
+  .attr{ background: var(--panel-alt); border:1px solid var(--line); padding:10px 14px; display:flex; justify-content:space-between; align-items:center; transition: box-shadow .3s ease; }
+  .attr .attr-name{ font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); }
+  .attr .attr-val{ font-size:22px; font-weight:700; font-family:'Orbitron',sans-serif; }
+  .attr.str{ border-left:3px solid var(--str); } .attr.str .attr-val{ color:var(--str); }
+  .attr.int{ border-left:3px solid var(--int); } .attr.int .attr-val{ color:var(--int); }
+  .attr.wis{ border-left:3px solid var(--wis); } .attr.wis .attr-val{ color:var(--wis); }
+  .attr.attr-drop{ animation: attrDrop .5s ease; }
+  @keyframes attrDrop{ 0%{ box-shadow:0 0 0 rgba(255,59,92,0);} 30%{ box-shadow:0 0 18px rgba(255,59,92,.8);} 100%{ box-shadow:0 0 0 rgba(255,59,92,0);} }
+
+  /* ---------- grade de missões (1 coluna no celular, 3 no desktop) ---------- */
+  .quests{ display:grid; grid-template-columns: 1fr; gap: 14px; }
+
+  .quest-panel{ display:flex; flex-direction:column; }
+  .quest-head{ display:flex; align-items:center; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
+  .quest-tag{ font-size:10px; letter-spacing:1.5px; padding:3px 7px; border:1px solid currentColor; text-transform:uppercase; font-family:'Orbitron',sans-serif; }
+  .quest-panel.treino .quest-tag, .quest-panel.treino h2{ color: var(--str); }
+  .quest-panel.estudos .quest-tag, .quest-panel.estudos h2{ color: var(--int); }
+  .quest-panel.financas .quest-tag, .quest-panel.financas h2{ color: var(--wis); }
+  .quest-head h2{ font-size:16px; margin:0; letter-spacing:.5px; }
+
+  /* esconde/bloqueia estudos e finanças durante a Zona de Penalidade */
+  body.penalty-mode #panel-estudos, body.penalty-mode #panel-financas{ display:none; }
+
+  .task-list{ list-style:none; margin:0 0 12px; padding:0; display:flex; flex-direction:column; gap:8px; }
+  .task{
+    display:flex; align-items:center; gap:10px; background: var(--panel-alt); border:1px solid var(--line);
+    padding:12px; font-size:16px; min-height: var(--tap); cursor:pointer;
+    transition: opacity .22s ease, transform .22s ease, background .15s ease;
+  }
+  .task:active{ background: rgba(47,111,255,0.1); }
+  .task input[type=checkbox]{
+    appearance:none; width:26px; height:26px; min-width:26px; border:2px solid var(--muted);
+    background:transparent; cursor:pointer; position:relative; transition: transform .15s ease; pointer-events:none; /* clique é tratado pela linha inteira */
+  }
+  .task.treino input[type=checkbox]:checked{ background: var(--str); border-color:var(--str); box-shadow:0 0 8px var(--str);}
+  .task.estudos input[type=checkbox]:checked{ background: var(--int); border-color:var(--int); box-shadow:0 0 8px var(--int);}
+  .task.financas input[type=checkbox]:checked{ background: var(--wis); border-color:var(--wis); box-shadow:0 0 8px var(--wis);}
+  .task span{ flex:1; }
+  .task.done span{ color: var(--muted); text-decoration: line-through; }
+  .task.exempt{ border-color: var(--good); background: rgba(38,255,176,0.07); }
+  .task.exempt input[type=checkbox]{ background: var(--good); border-color: var(--good); }
+  .task.exempt span{ color: var(--good); }
+  .task button.del{
+    background:none; border:none; color:var(--muted); cursor:pointer; font-size:20px; padding:6px 8px;
+    min-width:40px; min-height:40px; transition: transform .15s ease, color .15s ease;
+  }
+  .task button.del:hover{ color: var(--danger); }
+  .task button.del:active{ transform: scale(.8); }
+
+  .task.task-enter{ animation: taskIn .28s ease-out; }
+  @keyframes taskIn{ from{opacity:0; transform:translateY(-6px) scale(.96);} to{opacity:1; transform:none;} }
+  .task.just-completed{ animation: pulseGlow .6s ease-out; }
+  @keyframes pulseGlow{ 0%{ box-shadow:0 0 0 rgba(0,229,255,0);} 35%{ box-shadow:0 0 20px currentColor;} 100%{ box-shadow:0 0 0 rgba(0,229,255,0);} }
+  .task.removing{ opacity:0; transform: translateX(16px) scale(.92); }
+
+  .exempt-banner{
+    display:flex; align-items:center; gap:8px; background: rgba(38,255,176,0.1); border:1px solid var(--good);
+    color: var(--good); padding:10px 12px; font-size:13px; margin-bottom:12px; font-weight:600;
+  }
+
+  .add-row{ display:flex; gap:8px; margin-top:auto; flex-wrap:wrap; }
+  .add-row input{ flex:1; min-width:120px; }
+
+  input[type=text], input[type=number], input[type=time]{
+    background:#050810; border:1px solid var(--line); color:var(--text);
+    padding:12px 10px; font-family:'Rajdhani',sans-serif; font-size:16px; width:100%; min-height:var(--tap);
+  }
+  input:focus, button:focus{ outline: 1px solid var(--cyan); outline-offset:1px; }
+  input::placeholder{ color: #3d4c66; }
+
+  button{
+    font-family:'Rajdhani',sans-serif; font-weight:700; letter-spacing:.5px; cursor:pointer;
+    border:1px solid var(--blue); background: rgba(47,111,255,0.12); color: var(--cyan);
+    padding:12px 16px; white-space:nowrap; font-size:15px; min-height:var(--tap);
+    transition: background .15s ease, box-shadow .15s ease, transform .1s ease;
+  }
+  button:hover{ background: rgba(47,111,255,0.25); box-shadow:0 0 12px rgba(0,229,255,.35); }
+  button:active{ transform: scale(.95); box-shadow:0 0 16px rgba(0,229,255,.5); }
+  button:disabled{ opacity:.35; cursor:not-allowed; box-shadow:none; }
+  button.ghost{ background:transparent; border-color: var(--line); color: var(--muted); }
+  button.ghost:hover{ color: var(--text); border-color: var(--muted); box-shadow:none; }
+  button.danger-btn{ border-color: var(--danger); color: var(--danger); background: rgba(255,59,92,0.1); }
+  button.danger-btn:hover{ background: rgba(255,59,92,0.22); box-shadow:0 0 12px rgba(255,59,92,.4); }
+  button.block{ width:100%; }
+
+  /* ---------- meta semanal de finanças ---------- */
+  .divider{ border:none; border-top:1px dashed var(--line); margin:14px 0; }
+  .sub-label{ font-size:11px; letter-spacing:1.5px; color:var(--muted); text-transform:uppercase; margin-bottom:8px; }
+  .goal-track{ position:relative; height:16px; background:#050810; border:1px solid var(--line); overflow:hidden; margin:8px 0; }
+  .goal-fill{ height:100%; background: linear-gradient(90deg, var(--wis), var(--cyan)); transition: width .5s ease; width:0%; }
+  .goal-text{ font-size:12px; color:var(--muted); display:flex; justify-content:space-between; }
+
+  /* ---------- painel de punição física ---------- */
+  #punishment-panel{ display:none; }
+  body.penalty-mode #punishment-panel{ display:block; }
+  .punish-title{ font-size:19px; font-weight:900; letter-spacing:1.5px; margin:0 0 4px; color:#fff; position:relative; display:inline-block; }
+  .glitch{ position:relative; }
+  .glitch::before, .glitch::after{ content: attr(data-text); position:absolute; left:0; top:0; width:100%; overflow:hidden; }
+  .glitch::before{ color:#ff3b5c; clip-path: inset(0 0 55% 0); animation: glitchTop 1.3s infinite linear alternate-reverse; }
+  .glitch::after{ color:#35d0ff; clip-path: inset(55% 0 0 0); animation: glitchBottom 1.7s infinite linear alternate-reverse; }
+  @keyframes glitchTop{ 0%{transform:translate(0,0);} 20%{transform:translate(-2px,-1px);} 40%{transform:translate(2px,1px);} 60%{transform:translate(-1px,2px);} 80%{transform:translate(1px,-2px);} 100%{transform:translate(0,0);} }
+  @keyframes glitchBottom{ 0%{transform:translate(0,0);} 20%{transform:translate(2px,1px);} 40%{transform:translate(-2px,-1px);} 60%{transform:translate(1px,-2px);} 80%{transform:translate(-1px,2px);} 100%{transform:translate(0,0);} }
+  .punish-sub{ color: var(--danger); font-size:13px; margin-bottom:14px; }
+  #list-punicao{ list-style:none; padding:0; margin:0 0 14px; display:flex; flex-direction:column; gap:8px; }
+  .punish-task{
+    display:flex; align-items:center; gap:10px; background: rgba(255,59,92,0.08); border:1px solid var(--danger);
+    padding:12px; font-size:16px; min-height:var(--tap); cursor:pointer; transition: opacity .22s ease;
+  }
+  .punish-task input[type=checkbox]{ appearance:none; width:26px; height:26px; min-width:26px; border:2px solid var(--danger); background:transparent; pointer-events:none; }
+  .punish-task input[type=checkbox]:checked{ background: var(--danger); box-shadow:0 0 8px var(--danger); }
+  .punish-task.done span{ text-decoration: line-through; opacity:.5; }
+  .alarm-row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+
+  /* ---------- notificações ---------- */
+  #notify-stack{ position: fixed; top: 10px; left:50%; transform:translateX(-50%); display:flex; flex-direction:column; gap:8px; z-index:999; align-items:center; width: min(94vw, 420px); }
+  .toast{
+    width:100%; background: linear-gradient(180deg, rgba(9,14,26,.97), rgba(4,7,14,.97)); border:1px solid var(--glow);
+    box-shadow: 0 0 24px rgba(47,216,255,.35), inset 0 0 20px rgba(47,111,255,.08);
+    clip-path: polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);
+    padding: 12px 14px; text-align:center; animation: toast-in .35s ease-out;
+  }
+  .toast .t-head{ font-family:'Orbitron',sans-serif; font-size:10px; letter-spacing:2px; color:var(--cyan); text-transform:uppercase; margin-bottom:4px;}
+  .toast .t-body{ font-size:14px; }
+  .toast.levelup{ border-color: var(--good); box-shadow: 0 0 30px rgba(38,255,176,.45); }
+  .toast.levelup .t-head{ color: var(--good); }
+  .toast.danger{ border-color: var(--danger); box-shadow: 0 0 30px rgba(255,59,92,.5); animation: toast-in .35s ease-out, shake .4s ease .35s; }
+  .toast.danger .t-head{ color: var(--danger); }
+  .toast.fade{ animation: toast-out .4s ease-in forwards; }
+  @keyframes toast-in{ from{ opacity:0; transform:translateY(-14px) scale(.97);} to{opacity:1; transform:translateY(0) scale(1);} }
+  @keyframes toast-out{ to{ opacity:0; transform:translateY(-10px) scale(.97);} }
+  @keyframes shake{ 0%,100%{ transform:translateX(0);} 20%{ transform:translateX(-6px);} 40%{ transform:translateX(6px);} 60%{ transform:translateX(-4px);} 80%{ transform:translateX(4px);} }
+
+  @media (prefers-reduced-motion: reduce){
+    .exp-fill{ transition:none; } .toast{ animation:none; } body.penalty-mode, #penalty-overlay{ animation:none; }
+    .glitch::before,.glitch::after{ animation:none; }
+  }
+
+  footer{ text-align:center; color:var(--muted); font-size:11px; margin-top:24px; position:relative; z-index:1; }
+
+  /* ---------- telas maiores (tablet/desktop) ---------- */
+  @media (min-width: 700px){
+    body{ padding: 28px 16px 80px; }
+    .wrap{ max-width: 1180px; }
+    .system-frame{ padding: 22px 26px; }
+    .quests{ grid-template-columns: repeat(3, 1fr); }
+    #status-attrs{ grid-template-columns: repeat(3,1fr); }
+    .status-title{ font-size:26px; }
+    .cycle-config{ flex-wrap: nowrap; }
+  }
+</style>
+</head>
+<body>
+
+<div id="penalty-overlay"></div>
+<div id="notify-stack"></div>
+
+<div class="wrap">
+
+  <!-- RELÓGIO DO CICLO -->
+  <section class="system-frame cycle-panel">
+    <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+    <p class="eyebrow">Ciclo do Sistema</p>
+    <div class="clock-label">Tempo restante do dia</div>
+    <div class="clock" id="clock">24:00:00</div>
+    <div class="cycle-meta" id="cycle-meta">Configure o horário de início do dia abaixo.</div>
+
+    <div class="cycle-config">
+      <div class="field-group">
+        <label for="input-start-hour">Horário de Início do Dia</label>
+        <input type="time" id="input-start-hour" value="06:00">
+      </div>
+      <button id="btn-set-start" class="block">Confirmar Horário</button>
+
+    </div><div class="debug-box">
+      <span class="tag">Ferramenta de Teste</span>
+      <button class="ghost" id="btn-force-end">Forçar Fim de Ciclo</button>
+      <small>use para testar o alarme e a penalidade sem esperar 24h.</small>
+    </div>
+  </section>
+
+  <!-- PAINEL DE PUNIÇÃO FÍSICA (só aparece na Zona de Penalidade) -->
+  <section class="system-frame" id="punishment-panel">
+    <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+    <h2 class="punish-title glitch" data-text="☠ PENALIDADE ATIVADA ☠">☠ PENALIDADE ATIVADA ☠</h2>
+    <p class="punish-sub">AVISO DO SISTEMA: PENALIDADE ATIVADA. Missões diárias pendentes geraram uma Missão de Punição Física com carga em dobro. Complete tudo abaixo para destravar o painel.</p>
+    <ul id="list-punicao"></ul>
+    <div class="alarm-row">
+      <button class="danger-btn block" id="btn-silence-alarm">🔇 Silenciar Alarme</button>
+    </div>
+  </section>
+
+  <!-- STATUS WINDOW -->
+  <section class="system-frame">
+    <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+    <p class="eyebrow">Janela de Status</p>
+    <div class="status-head">
+      <div>
+        <h1 class="status-title">JOGADOR</h1>
+        <div class="status-sub">"Aquele que sobe sozinho."</div>
+      </div>
+      <div class="lvl-badge">
+        <div>
+          <div class="lvl-label">Nível</div>
+          <div class="lvl-num" id="lvl-num">1</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="exp-track"><div class="exp-fill" id="exp-fill"></div></div>
+    <div class="exp-text"><span>EXP</span><span id="exp-text">0 / 100</span></div>
+
+    <!-- atributos ficam ocultos durante a Zona de Penalidade -->
+    <div id="status-attrs">
+      <div class="attr str" id="attr-str"><span class="attr-name">Força · STR</span><span class="attr-val" id="str-val">10</span></div>
+      <div class="attr int" id="attr-int"><span class="attr-name">Inteligência · INT</span><span class="attr-val" id="int-val">10</span></div>
+      <div class="attr wis" id="attr-wis"><span class="attr-name">Percepção · WIS</span><span class="attr-val" id="wis-val">10</span></div>
+    </div>
+  </section>
+
+  <!-- QUESTS -->
+  <div class="quests">
+
+    <!-- TREINO (permanece visível; vira punição durante a penalidade) -->
+    <section class="system-frame quest-panel treino" id="panel-treino">
+      <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+      <div class="quest-head"><span class="quest-tag">Missão de Força</span></div>
+      <h2>Treino</h2>
+      <ul class="task-list" id="list-treino"></ul>
+      <div class="add-row">
+        <input type="text" id="input-treino" placeholder="Ex: Treino de Calistenia: 50 Flexões, 20 Barras">
+        <button data-add="treino">+ Missão</button>
+      </div>
+    </section>
+
+    <!-- ESTUDOS (some durante a penalidade) -->
+    <section class="system-frame quest-panel estudos" id="panel-estudos">
+      <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+      <div class="quest-head"><span class="quest-tag">Missão de Inteligência</span></div>
+      <h2>Estudos</h2>
+      <ul class="task-list" id="list-estudos"></ul>
+      <div class="add-row">
+        <input type="text" id="input-estudos" placeholder="Ex: Praticar algoritmos em JavaScript">
+        <button data-add="estudos">+ Missão</button>
+      </div>
+    </section>
+
+    <!-- FINANÇAS (some durante a penalidade) -->
+    <section class="system-frame quest-panel financas" id="panel-financas">
+      <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+      <div class="quest-head"><span class="quest-tag">Missão de Percepção</span></div>
+      <h2>Finanças</h2>
+
+      <div class="exempt-banner" id="exempt-banner" style="display:none;">
+        ✅ META SEMANAL CONCLUÍDA — ISENÇÃO ATIVADA
+      </div>
+
+      <ul class="task-list" id="list-financas"></ul>
+      <div class="add-row">
+        <input type="text" id="input-financas" placeholder="Ex: Orçamento para peças do PC">
+        <button data-add="financas">+ Missão</button>
+      </div>
+
+      <hr class="divider">
+      <div class="sub-label">Meta Semanal de Economia (reinicia toda segunda-feira)</div>
+
+      <div class="add-row">
+        <input type="number" id="input-weekly-goal" placeholder="Meta da semana (R$)">
+        <button id="btn-set-goal">Definir Meta</button>
+      </div>
+
+      <div class="goal-track"><div class="goal-fill" id="goal-fill"></div></div>
+      <div class="goal-text"><span id="goal-progress-text">R$ 0 / R$ 0</span><span id="goal-status-text"></span></div>
+
+      <div class="add-row">
+        <input type="number" id="input-savings" placeholder="Registrar economia (R$)">
+        <button id="btn-add-savings">Registrar</button>
+      </div>
+    </section>
+
+  </div>
+
+  <footer>O SISTEMA — progresso salvo automaticamente neste navegador.</footer>
+</div>
+
+<script>
+/* =========================================================================
+   O SISTEMA — script principal (v3)
+   -------------------------------------------------------------------------
+   Estado salvo em localStorage:
+   {
+     level, exp,                        -> nível e exp acumulada dentro do nível atual
+     attrs: {str,int,wis},
+     cycle: {startHour, cycleStart, cycleEnd, resolved},
+     penalty: {active, tasks:[...]},     -> Zona de Penalidade / Missão de Punição Física
+     tasks: {treino:[...], estudos:[...], financas:[...]},
+     finance: {weeklyGoal, weeklyProgress, weekStart, exemptionActive}
+   }
+   ========================================================================= */
+(function(){
+  const STORAGE_KEY = 'osistema_save_v3';
+
+  function cryptoId(){
+    return 'id-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,8);
+  }
+
+  // ---------- utilitários de data/semana ----------
+  function mondayOf(date){
+    const d = new Date(date);
+    const day = d.getDay(); // 0=domingo ... 6=sábado
+    const diff = (day === 0 ? -6 : 1 - day);
+    d.setDate(d.getDate() + diff);
+    d.setHours(0,0,0,0);
+    return d;
+  }
+  function dateKey(d){
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+
+  // ---------- estado padrão ----------
+  const defaultState = {
+    level: 1,
+    exp: 0,
+    attrs: { str: 10, int: 10, wis: 10 },
+    cycle: { startHour: '06:00', cycleStart: null, cycleEnd: null, resolved: false },
+    penalty: { active: false, tasks: [] },
+    tasks: {
+      treino: [
+        { id: cryptoId(), text: 'Treino de Calistenia: 50 Flexões, 20 Barras', done: false }
+      ],
+      estudos: [
+        { id: cryptoId(), text: 'Revisar edital e questões para a Receita Federal', done: false },
+        { id: cryptoId(), text: 'Praticar algoritmos em JavaScript', done: false }
+      ],
+      financas: [
+        { id: cryptoId(), text: 'Orçamento para peças do PC', done: false }
+      ]
+    },
+    finance: { weeklyGoal: 0, weeklyProgress: 0, weekStart: dateKey(mondayOf(new Date())), exemptionActive: false }
+  };
+
+  function structuredCloneSafe(obj){ return JSON.parse(JSON.stringify(obj)); }
+
+  function loadState(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return structuredCloneSafe(defaultState);
+      const parsed = JSON.parse(raw);
+      return Object.assign(structuredCloneSafe(defaultState), parsed, {
+        attrs: Object.assign({str:10,int:10,wis:10}, parsed.attrs || {}),
+        cycle: Object.assign({startHour:'06:00', cycleStart:null, cycleEnd:null, resolved:false}, parsed.cycle || {}),
+        penalty: Object.assign({active:false, tasks:[]}, parsed.penalty || {}),
+        tasks: Object.assign({treino:[],estudos:[],financas:[]}, parsed.tasks || {}),
+        finance: Object.assign({weeklyGoal:0, weeklyProgress:0, weekStart:dateKey(mondayOf(new Date())), exemptionActive:false}, parsed.finance || {})
+      });
+    }catch(e){
+      console.error('Falha ao carregar save, iniciando novo.', e);
+      return structuredCloneSafe(defaultState);
+    }
+  }
+
+  let state = loadState();
+  function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+  // ---------- notificações estilo "Aviso do Sistema" ----------
+  function notify(headline, body, variant){
+    const stack = document.getElementById('notify-stack');
+    const el = document.createElement('div');
+    el.className = 'toast' + (variant ? ' ' + variant : '');
+    el.innerHTML = `<div class="t-head">${headline}</div><div class="t-body">${body}</div>`;
+    stack.appendChild(el);
+    setTimeout(()=>{
+      el.classList.add('fade');
+      setTimeout(()=> el.remove(), 420);
+    }, 3800);
+  }
+
+  // ---------- leveling progressivo ----------
+  // Nível 1 exige 100 EXP, Nível 2 exige 150 EXP, Nível 3 exige 200 EXP... (+50 por nível)
+  function calcExpNeeded(level){ return 100 + (level - 1) * 50; }
+
+  function gainExp(amount){
+    state.exp += amount;
+    let needed = calcExpNeeded(state.level);
+    while(state.exp >= needed){
+      state.exp -= needed;
+      state.level += 1;
+      needed = calcExpNeeded(state.level);
+      notify('Aviso do Sistema', `LEVEL UP! Você alcançou o Nível ${state.level}.`, 'levelup');
+    }
+  }
+  function subtractExp(amount){ state.exp = Math.max(0, state.exp - amount); }
+  function gainAttr(attr, amount){ state.attrs[attr] = Math.max(0, state.attrs[attr] + amount); }
+
+  function pulseAttrDrop(attr){
+    const el = document.getElementById('attr-' + attr);
+    if(!el) return;
+    el.classList.add('attr-drop');
+    el.addEventListener('animationend', ()=> el.classList.remove('attr-drop'), { once:true });
+  }
+
+  // ---------- ciclo de 24h alinhado ao horário configurado ----------
+  function computeCycleFromStartHour(startHourStr){
+    const [h, m] = startHourStr.split(':').map(Number);
+    const now = new Date();
+    let start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0);
+    if(start.getTime() > now.getTime()) start.setDate(start.getDate() - 1);
+    return { start: start.getTime(), end: start.getTime() + 24*60*60*1000 };
+  }
+
+  function applyStartHour(hourStr){
+    state.cycle.startHour = hourStr;
+    const { start, end } = computeCycleFromStartHour(hourStr);
+    state.cycle.cycleStart = start;
+    state.cycle.cycleEnd = end;
+    state.cycle.resolved = false;
+  }
+
+  // ---------- meta semanal de finanças ----------
+  function checkWeeklyRollover(){
+    const curMonday = dateKey(mondayOf(new Date()));
+    if(state.finance.weekStart !== curMonday){
+      state.finance.weekStart = curMonday;
+      state.finance.weeklyProgress = 0;
+      state.finance.exemptionActive = false;
+      notify('Aviso do Sistema', 'Nova semana iniciada. Meta financeira reiniciada.');
+    }
+  }
+
+  function setWeeklyGoal(amount){
+    if(isNaN(amount) || amount <= 0) return;
+    state.finance.weeklyGoal = amount;
+    evaluateExemption();
+    save(); render();
+  }
+
+  function addSavings(amount){
+    if(isNaN(amount) || amount <= 0) return;
+    state.finance.weeklyProgress += amount;
+    gainAttr('wis', 1);
+    gainExp(5);
+    notify('Aviso do Sistema', `Economia registrada! +5 EXP · +1 WIS`);
+    evaluateExemption();
+    save(); render();
+  }
+
+  function evaluateExemption(){
+    const goal = state.finance.weeklyGoal;
+    if(goal > 0 && state.finance.weeklyProgress >= goal && !state.finance.exemptionActive){
+      state.finance.exemptionActive = true;
+      notify('Aviso do Sistema', 'META SEMANAL CONCLUÍDA — ISENÇÃO ATIVADA até domingo!', 'levelup');
+    }
+  }
+
+  // ---------- avanço de dia (sem penalidade) ----------
+  function startNewDay(){
+    checkWeeklyRollover();
+    ['treino','estudos','financas'].forEach(cat => state.tasks[cat].forEach(t => t.done = false));
+
+    applyStartHour(state.cycle.startHour);
+    
+    state.cycle.resolved = false;
+
+    playSoftChime();
+    notify('AVISO DO SISTEMA', 'Um novo dia começou. Missões atualizadas.');
+    save(); render();
+  }
+
+  // ---------- avaliação de fim de ciclo ----------
+  function resolveCycleEnd(){
+    if(state.cycle.resolved) return;
+    state.cycle.resolved = true;
+
+    const incomplete = [];
+    if(state.tasks.treino.some(t => !t.done)) incomplete.push('treino');
+    if(state.tasks.estudos.some(t => !t.done)) incomplete.push('estudos');
+    if(!state.finance.exemptionActive && state.tasks.financas.some(t => !t.done)) incomplete.push('financas');
+
+    if(incomplete.length === 0){
+      startNewDay();
+    } else {
+      triggerPenalty(incomplete);
+      save(); render();
+    }
+  }
+
+  // ---------- Zona de Penalidade ----------
+  function doubleNumbers(text){
+    return text.replace(/\d+/g, m => String(parseInt(m,10) * 2));
+  }
+
+  function buildPunishmentTasks(){
+    if(state.tasks.treino.length === 0){
+      return [{ id: cryptoId(), text: 'Missão de Punição Física: 100 Flexões, 40 Agachamentos', done:false }];
+    }
+    return state.tasks.treino.map(t => ({ id: cryptoId(), text: doubleNumbers(t.text), done:false }));
+  }
+
+  function triggerPenalty(incompleteCategories){
+    state.penalty.active = true;
+    state.penalty.tasks = buildPunishmentTasks();
+
+    const attrMap = { treino: 'str', estudos: 'int', financas: 'wis' };
+    let totalExpLoss = 0;
+    incompleteCategories.forEach(cat => {
+      gainAttr(attrMap[cat], -1);
+      pulseAttrDrop(attrMap[cat]);
+      totalExpLoss += 15;
+    });
+    subtractExp(totalExpLoss);
+
+    document.body.classList.add('penalty-mode');
+    startDangerAlarm();
+    notify('AVISO DO SISTEMA', 'PENALIDADE ATIVADA! Missões pendentes geraram Missão de Punição Física.', 'danger');
+  }
+
+  function completePunishmentTask(id){
+    const task = state.penalty.tasks.find(t => t.id === id);
+    if(!task || task.done) return;
+    task.done = true;
+
+    if(state.penalty.tasks.every(t => t.done)){
+      resolvePenalty();
+    } else {
+      save(); render();
+    }
+  }
+
+  function resolvePenalty(){
+    state.penalty.active = false;
+    state.penalty.tasks = [];
+    document.body.classList.remove('penalty-mode');
+    stopDangerAlarm();
+    startNewDay(); // ao sair da penalidade, um novo dia começa de fato
+  }
+
+  // Ferramenta de teste: força o fim do ciclo em instantes, sem esperar 24h.
+  function forceCycleEnd(){
+    if(state.penalty.active) return;
+    if(!state.cycle.cycleEnd) applyStartHour(state.cycle.startHour);
+    state.cycle.cycleEnd = Date.now() + 400;
+    state.cycle.resolved = false;
+    save(); render();
+  }
+
+  // ---------- áudio (Web Audio API) ----------
+  let audioCtx = null;
+  let alarmInterval = null;
+
+  function ensureAudioCtx(){
+    if(!audioCtx){
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if(AC) audioCtx = new AC();
+    }
+    if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  }
+  document.addEventListener('click', ensureAudioCtx);
+  document.addEventListener('keydown', ensureAudioCtx);
+  document.addEventListener('touchstart', ensureAudioCtx, { passive:true });
+
+  // bipe curto e agressivo (alarme de penalidade)
+  function dangerBeep(){
+    if(!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'square';
+    osc.frequency.value = 880;
+    gain.gain.value = 0.16;
+    osc.connect(gain).connect(audioCtx.destination);
+    const t0 = audioCtx.currentTime;
+    gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.28);
+    osc.start(t0); osc.stop(t0 + 0.3);
+  }
+  function startDangerAlarm(){
+    ensureAudioCtx();
+    stopDangerAlarm();
+    dangerBeep();
+    alarmInterval = setInterval(dangerBeep, 700);
+  }
+  function stopDangerAlarm(){
+    if(alarmInterval){ clearInterval(alarmInterval); alarmInterval = null; }
+  }
+
+  // som suave de duas notas (início de um novo dia)
+  function playSoftChime(){
+    ensureAudioCtx();
+    if(!audioCtx) return;
+    [523.25, 659.25].forEach((freq, i) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.value = 0.0001;
+      osc.connect(gain).connect(audioCtx.destination);
+      const t0 = audioCtx.currentTime + i * 0.22;
+      gain.gain.exponentialRampToValueAtTime(0.09, t0 + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.5);
+      osc.start(t0); osc.stop(t0 + 0.55);
+    });
+  }
+
+  // ---------- render ----------
+  function pad(n){ return n.toString().padStart(2,'0'); }
+  function formatCountdown(ms){
+    if(ms < 0) ms = 0;
+    const totalSec = Math.floor(ms/1000);
+    const h = Math.floor(totalSec/3600);
+    const m = Math.floor((totalSec%3600)/60);
+    const s = totalSec%60;
+    return `${pad(h)}:${pad(m)}:${pad(s)}`;
+  }
+  function formatDateTime(ts){
+    return new Date(ts).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+  }
+
+  function updateClock(){
+    const clockEl = document.getElementById('clock');
+    const metaEl = document.getElementById('cycle-meta');
+
+    if(state.penalty.active){
+      clockEl.textContent = '00:00:00';
+      clockEl.className = 'clock danger';
+      metaEl.textContent = 'ZONA DE PENALIDADE ATIVA — complete a Missão de Punição Física para liberar um novo ciclo.';
+      return;
+    }
+    if(!state.cycle.cycleEnd){
+      clockEl.textContent = '24:00:00';
+      clockEl.className = 'clock';
+      metaEl.textContent = 'Configure o horário de início do dia abaixo.';
+      return;
+    }
+    const remaining = state.cycle.cycleEnd - Date.now();
+    clockEl.textContent = formatCountdown(remaining);
+    clockEl.className = 'clock' + (remaining < 60*60*1000 ? ' warn' : '');
+    metaEl.textContent = `Início: ${formatDateTime(state.cycle.cycleStart)} · Fim: ${formatDateTime(state.cycle.cycleEnd)}`;
+  }
+
+  function render(){
+    document.getElementById('lvl-num').textContent = state.level;
+    document.getElementById('str-val').textContent = state.attrs.str;
+    document.getElementById('int-val').textContent = state.attrs.int;
+    document.getElementById('wis-val').textContent = state.attrs.wis;
+
+    const needed = calcExpNeeded(state.level);
+    const pct = Math.min(100, (state.exp / needed) * 100);
+    document.getElementById('exp-fill').style.width = pct + '%';
+    document.getElementById('exp-text').textContent = `${state.exp} / ${needed}`;
+
+    renderTaskList('treino');
+    renderTaskList('estudos');
+    renderTaskList('financas');
+    renderPunishment();
+    renderWeeklyGoal();
+
+    document.getElementById('input-start-hour').value = state.cycle.startHour;
+    document.getElementById('btn-set-start').disabled = state.penalty.active;
+    document.getElementById('input-start-hour').disabled = state.penalty.active;
+    document.getElementById('btn-force-end').disabled = state.penalty.active;
+
+    updateClock();
+  }
+
+  function renderTaskList(category){
+    const ul = document.getElementById('list-' + category);
+    ul.innerHTML = '';
+    const isExemptCategory = (category === 'financas' && state.finance.exemptionActive);
+
+    state.tasks[category].forEach(task => {
+      const li = document.createElement('li');
+      li.className = 'task ' + category + (task.done ? ' done' : '') + (isExemptCategory ? ' exempt' : '');
+      li.setAttribute('data-id', task.id);
+      li.setAttribute('data-cat', category);
+      const checked = task.done || isExemptCategory;
+      li.innerHTML = `
+        <input type="checkbox" ${checked ? 'checked' : ''} ${isExemptCategory ? 'disabled' : ''} data-task="${task.id}" data-cat="${category}">
+        <span>${escapeHtml(task.text)}</span>
+        <button class="del" data-del="${task.id}" data-cat="${category}" title="Remover missão">✕</button>
+      `;
+      ul.appendChild(li);
+    });
+
+    document.getElementById('exempt-banner').style.display = (category === 'financas' && isExemptCategory) ? 'flex' : 'none';
+  }
+
+  function renderPunishment(){
+    const ul = document.getElementById('list-punicao');
+    ul.innerHTML = '';
+    state.penalty.tasks.forEach(t => {
+      const li = document.createElement('li');
+      li.className = 'punish-task' + (t.done ? ' done' : '');
+      li.setAttribute('data-id', t.id);
+      li.innerHTML = `
+        <input type="checkbox" ${t.done ? 'checked' : ''} data-punish="${t.id}">
+        <span>${escapeHtml(t.text)}</span>
+      `;
+      ul.appendChild(li);
+    });
+  }
+
+  function renderWeeklyGoal(){
+    const goal = state.finance.weeklyGoal;
+    const progress = state.finance.weeklyProgress;
+    const pct = goal > 0 ? Math.min(100, (progress/goal)*100) : 0;
+    document.getElementById('goal-fill').style.width = pct + '%';
+    document.getElementById('goal-progress-text').textContent = `R$ ${progress.toFixed(2)} / R$ ${goal.toFixed(2)}`;
+    document.getElementById('goal-status-text').textContent = state.finance.exemptionActive ? 'Isento até domingo ✅' : '';
+  }
+
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // ---------- ações do jogador ----------
+  function addTask(category, text){
+    if(state.penalty.active) return; // <-- Trava de segurança adicionada aqui
+    if(!text || !text.trim()) return;
+    const id = cryptoId();
+    state.tasks[category].push({ id, text: text.trim(), done: false });
+    save(); render();
+    playEnterAnimation(id);
+  }
+
+  function completeTask(category, id){
+    if(state.penalty.active) return; // painel bloqueado durante a penalidade
+    const task = state.tasks[category].find(t => t.id === id);
+    if(!task || task.done) return;
+    task.done = true;
+
+    const attrMap = { treino: 'str', estudos: 'int', financas: 'wis' };
+    const attr = attrMap[category];
+    gainAttr(attr, 1);
+    gainExp(10);
+    notify('Aviso do Sistema', `Missão Diária Concluída! +10 EXP · +1 ${attr.toUpperCase()}`);
+
+    save(); render();
+    playCompleteAnimation(id);
+  }
+
+  function deleteTaskAnimated(category, id){
+    if(state.penalty.active) return; // <-- Adicione esta linha aqui!
+    const li = document.querySelector(`li[data-id="${id}"]`);
+    const commit = () => { state.tasks[category] = state.tasks[category].filter(t => t.id !== id); save(); render(); };
+    if(li){ li.classList.add('removing'); setTimeout(commit, 220); } else { commit(); }
+  }
+
+  // ---------- eventos ----------
+  document.querySelectorAll('button[data-add]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const cat = btn.getAttribute('data-add');
+      const input = document.getElementById('input-' + cat);
+      addTask(cat, input.value);
+      input.value = '';
+    });
+  });
+
+  ['input-treino','input-estudos','input-financas'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', e => {
+      if(e.key === 'Enter'){
+        const cat = id.replace('input-','');
+        addTask(cat, e.target.value);
+        e.target.value = '';
+      }
+    });
+  });
+
+  // clique na linha inteira da missão alterna concluído (mais fácil de tocar durante o treino)
+  document.body.addEventListener('click', e => {
+    if(e.target.closest('button')) return; // botões tratam o próprio clique abaixo
+
+    const taskRow = e.target.closest('.task');
+    if(taskRow && !state.penalty.active){
+      const cat = taskRow.getAttribute('data-cat');
+      const id = taskRow.getAttribute('data-id');
+      const isExempt = taskRow.classList.contains('exempt');
+      if(!isExempt) completeTask(cat, id);
+      return;
+    }
+
+    const punishRow = e.target.closest('.punish-task');
+    if(punishRow){
+      completePunishmentTask(punishRow.getAttribute('data-id'));
+      return;
+    }
+  });
+
+  document.body.addEventListener('click', e => {
+    const delBtn = e.target.closest('button[data-del]');
+    if(delBtn){ deleteTaskAnimated(delBtn.getAttribute('data-cat'), delBtn.getAttribute('data-del')); }
+  });
+
+  function playCompleteAnimation(id){
+    const li = document.querySelector(`li[data-id="${id}"]`);
+    if(!li) return;
+    li.classList.add('just-completed');
+    li.addEventListener('animationend', ()=> li.classList.remove('just-completed'), { once:true });
+  }
+  function playEnterAnimation(id){
+    const li = document.querySelector(`li[data-id="${id}"]`);
+    if(!li) return;
+    li.classList.add('task-enter');
+    li.addEventListener('animationend', ()=> li.classList.remove('task-enter'), { once:true });
+  }
+
+  document.getElementById('btn-set-start').addEventListener('click', () => {
+    const val = document.getElementById('input-start-hour').value || '06:00';
+    applyStartHour(val);
+    save(); render();
+    notify('Aviso do Sistema', `Ciclo diário configurado para as ${val}. Você tem 24h para concluir as missões.`);
+  });
+
+  document.getElementById('btn-force-end').addEventListener('click', forceCycleEnd);
+
+  document.getElementById('btn-silence-alarm').addEventListener('click', () => {
+    stopDangerAlarm();
+    notify('Aviso do Sistema', 'Alarme silenciado. A Missão de Punição Física continua pendente.');
+  });
+
+  document.getElementById('btn-set-goal').addEventListener('click', () => {
+    const input = document.getElementById('input-weekly-goal');
+    setWeeklyGoal(parseFloat(input.value));
+    input.value = '';
+  });
+
+  document.getElementById('btn-add-savings').addEventListener('click', () => {
+    const input = document.getElementById('input-savings');
+    addSavings(parseFloat(input.value));
+    input.value = '';
+  });
+
+  // ---------- inicialização ----------
+  if(!state.cycle.cycleStart || !state.cycle.cycleEnd){
+    applyStartHour(state.cycle.startHour);
+    save();
+  }
+  checkWeeklyRollover();
+  if(state.penalty.active){
+    document.body.classList.add('penalty-mode');
+    startDangerAlarm();
+  }
+
+  render();
+
+  // laço principal: verifica a cada segundo se o ciclo terminou
+  setInterval(() => {
+    if(!state.penalty.active && state.cycle.cycleEnd && Date.now() >= state.cycle.cycleEnd && !state.cycle.resolved){
+      resolveCycleEnd();
+    } else {
+      updateClock();
+    }
+  }, 1000);
+})();
+</script>
+
+</body>
+</html>
