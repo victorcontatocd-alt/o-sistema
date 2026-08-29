@@ -6,6 +6,7 @@
 <title>O SISTEMA — Painel do Jogador</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.json">
 <style>
   :root{
     --bg: #030509;
@@ -145,7 +146,7 @@
   .task:active{ background: rgba(47,111,255,0.1); }
   .task input[type=checkbox]{
     appearance:none; width:26px; height:26px; min-width:26px; border:2px solid var(--muted);
-    background:transparent; cursor:pointer; position:relative; transition: transform .15s ease; pointer-events:none; /* clique é tratado pela linha inteira */
+    background:transparent; cursor:pointer; position:relative; transition: transform .15s ease; pointer-events:none;
   }
   .task.treino input[type=checkbox]:checked{ background: var(--str); border-color:var(--str); box-shadow:0 0 8px var(--str);}
   .task.estudos input[type=checkbox]:checked{ background: var(--int); border-color:var(--int); box-shadow:0 0 8px var(--int);}
@@ -262,9 +263,6 @@
     .status-title{ font-size:26px; }
     .cycle-config{ flex-wrap: nowrap; }
   }
-
-<link rel="manifest" href="manifest.json">
-
 </style>
 </head>
 <body>
@@ -288,8 +286,9 @@
         <input type="time" id="input-start-hour" value="06:00">
       </div>
       <button id="btn-set-start" class="block">Confirmar Horário</button>
+    </div>
 
-    </div><div class="debug-box">
+    <div class="debug-box">
       <span class="tag">Ferramenta de Teste</span>
       <button class="ghost" id="btn-force-end">Forçar Fim de Ciclo</button>
       <small>use para testar o alarme e a penalidade sem esperar 24h.</small>
@@ -362,7 +361,7 @@
       </div>
     </section>
 
-    <!-- FINANÇAS (some durante a penalidade) -->
+    <!-- FINANÇAS (Orçamento, Gastos e Meta Semanal) -->
     <section class="system-frame quest-panel financas" id="panel-financas">
       <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
       <div class="quest-head"><span class="quest-tag">Missão de Percepção</span></div>
@@ -372,10 +371,22 @@
         ✅ META SEMANAL CONCLUÍDA — ISENÇÃO ATIVADA
       </div>
 
-      <ul class="task-list" id="list-financas"></ul>
-      <div class="add-row">
-        <input type="text" id="input-financas" placeholder="Ex: Orçamento para peças do PC">
-        <button data-add="financas">+ Missão</button>
+      <div class="budget-box" style="margin-top: 8px;">
+        <label for="input-budget" style="font-size:10px; color:var(--muted); letter-spacing:1.5px; text-transform:uppercase;">Orçamento Diário (R$)</label>
+        <input type="number" id="input-budget" placeholder="0,00">
+      </div>
+
+      <div class="remaining ok" id="remaining-box" style="background:var(--panel-alt); border:1px solid var(--line); padding:10px 12px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:baseline;">
+        <span style="font-size:13px;">Restante hoje</span>
+        <span class="num" id="remaining-val" style="font-size:18px; font-weight:700;">R$ 0,00</span>
+      </div>
+
+      <ul class="task-list" id="list-gastos"></ul>
+
+      <div class="add-row" style="margin-bottom: 12px;">
+        <input type="text" id="input-gasto-nome" placeholder="Gasto (ex: Almoço)" style="flex:2;">
+        <input type="number" id="input-gasto-valor" placeholder="R$" style="flex:1;">
+        <button id="btn-add-gasto">Registrar Gasto</button>
       </div>
 
       <hr class="divider">
@@ -401,19 +412,6 @@
 </div>
 
 <script>
-/* =========================================================================
-   O SISTEMA — script principal (v3)
-   -------------------------------------------------------------------------
-   Estado salvo em localStorage:
-   {
-     level, exp,                        -> nível e exp acumulada dentro do nível atual
-     attrs: {str,int,wis},
-     cycle: {startHour, cycleStart, cycleEnd, resolved},
-     penalty: {active, tasks:[...]},     -> Zona de Penalidade / Missão de Punição Física
-     tasks: {treino:[...], estudos:[...], financas:[...]},
-     finance: {weeklyGoal, weeklyProgress, weekStart, exemptionActive}
-   }
-   ========================================================================= */
 (function(){
   const STORAGE_KEY = 'osistema_save_v3';
 
@@ -424,7 +422,7 @@
   // ---------- utilitários de data/semana ----------
   function mondayOf(date){
     const d = new Date(date);
-    const day = d.getDay(); // 0=domingo ... 6=sábado
+    const day = d.getDay(); 
     const diff = (day === 0 ? -6 : 1 - day);
     d.setDate(d.getDate() + diff);
     d.setHours(0,0,0,0);
@@ -448,11 +446,10 @@
       estudos: [
         { id: cryptoId(), text: 'Revisar edital e questões para a Receita Federal', done: false },
         { id: cryptoId(), text: 'Praticar algoritmos em JavaScript', done: false }
-      ],
-      financas: [
-        { id: cryptoId(), text: 'Orçamento para peças do PC', done: false }
       ]
     },
+    budget: 0,
+    gastos: [],
     finance: { weeklyGoal: 0, weeklyProgress: 0, weekStart: dateKey(mondayOf(new Date())), exemptionActive: false }
   };
 
@@ -467,7 +464,9 @@
         attrs: Object.assign({str:10,int:10,wis:10}, parsed.attrs || {}),
         cycle: Object.assign({startHour:'06:00', cycleStart:null, cycleEnd:null, resolved:false}, parsed.cycle || {}),
         penalty: Object.assign({active:false, tasks:[]}, parsed.penalty || {}),
-        tasks: Object.assign({treino:[],estudos:[],financas:[]}, parsed.tasks || {}),
+        tasks: Object.assign({treino:[],estudos:[]}, parsed.tasks || {}),
+        budget: parsed.budget || 0,
+        gastos: parsed.gastos || [],
         finance: Object.assign({weeklyGoal:0, weeklyProgress:0, weekStart:dateKey(mondayOf(new Date())), exemptionActive:false}, parsed.finance || {})
       });
     }catch(e){
@@ -479,7 +478,7 @@
   let state = loadState();
   function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
 
-  // ---------- notificações estilo "Aviso do Sistema" ----------
+  // ---------- notificações ----------
   function notify(headline, body, variant){
     const stack = document.getElementById('notify-stack');
     const el = document.createElement('div');
@@ -493,7 +492,6 @@
   }
 
   // ---------- leveling progressivo ----------
-  // Nível 1 exige 100 EXP, Nível 2 exige 150 EXP, Nível 3 exige 200 EXP... (+50 por nível)
   function calcExpNeeded(level){ return 100 + (level - 1) * 50; }
 
   function gainExp(amount){
@@ -516,7 +514,7 @@
     el.addEventListener('animationend', ()=> el.classList.remove('attr-drop'), { once:true });
   }
 
-  // ---------- ciclo de 24h alinhado ao horário configurado ----------
+  // ---------- ciclo de 24h ----------
   function computeCycleFromStartHour(startHourStr){
     const [h, m] = startHourStr.split(':').map(Number);
     const now = new Date();
@@ -569,13 +567,13 @@
     }
   }
 
-  // ---------- avanço de dia (sem penalidade) ----------
+  // ---------- avanço de dia ----------
   function startNewDay(){
     checkWeeklyRollover();
-    ['treino','estudos','financas'].forEach(cat => state.tasks[cat].forEach(t => t.done = false));
+    ['treino','estudos'].forEach(cat => state.tasks[cat].forEach(t => t.done = false));
+    state.gastos = [];
 
     applyStartHour(state.cycle.startHour);
-    
     state.cycle.resolved = false;
 
     playSoftChime();
@@ -591,7 +589,11 @@
     const incomplete = [];
     if(state.tasks.treino.some(t => !t.done)) incomplete.push('treino');
     if(state.tasks.estudos.some(t => !t.done)) incomplete.push('estudos');
-    if(!state.finance.exemptionActive && state.tasks.financas.some(t => !t.done)) incomplete.push('financas');
+    
+    // Se a isenção semanal não estiver ativa, exige zerar ou gerenciar o orçamento
+    const totalGasto = state.gastos.reduce((acc, g) => acc + g.valor, 0);
+    const hasBudgetViolation = !state.finance.exemptionActive && (state.budget > 0 && totalGasto > state.budget);
+    if(hasBudgetViolation) incomplete.push('financas');
 
     if(incomplete.length === 0){
       startNewDay();
@@ -648,10 +650,9 @@
     state.penalty.tasks = [];
     document.body.classList.remove('penalty-mode');
     stopDangerAlarm();
-    startNewDay(); // ao sair da penalidade, um novo dia começa de fato
+    startNewDay();
   }
 
-  // Ferramenta de teste: força o fim do ciclo em instantes, sem esperar 24h.
   function forceCycleEnd(){
     if(state.penalty.active) return;
     if(!state.cycle.cycleEnd) applyStartHour(state.cycle.startHour);
@@ -675,7 +676,6 @@
   document.addEventListener('keydown', ensureAudioCtx);
   document.addEventListener('touchstart', ensureAudioCtx, { passive:true });
 
-  // bipe curto e agressivo (alarme de penalidade)
   function dangerBeep(){
     if(!audioCtx) return;
     const osc = audioCtx.createOscillator();
@@ -698,7 +698,6 @@
     if(alarmInterval){ clearInterval(alarmInterval); alarmInterval = null; }
   }
 
-  // som suave de duas notas (início de um novo dia)
   function playSoftChime(){
     ensureAudioCtx();
     if(!audioCtx) return;
@@ -765,7 +764,7 @@
 
     renderTaskList('treino');
     renderTaskList('estudos');
-    renderTaskList('financas');
+    renderFinancas();
     renderPunishment();
     renderWeeklyGoal();
 
@@ -779,28 +778,60 @@
 
   function renderTaskList(category){
     const ul = document.getElementById('list-' + category);
+    if(!ul) return;
     ul.innerHTML = '';
-    const isExemptCategory = (category === 'financas' && state.finance.exemptionActive);
 
     state.tasks[category].forEach(task => {
       const li = document.createElement('li');
-      li.className = 'task ' + category + (task.done ? ' done' : '') + (isExemptCategory ? ' exempt' : '');
+      li.className = 'task ' + category + (task.done ? ' done' : '');
       li.setAttribute('data-id', task.id);
       li.setAttribute('data-cat', category);
-      const checked = task.done || isExemptCategory;
       li.innerHTML = `
-        <input type="checkbox" ${checked ? 'checked' : ''} ${isExemptCategory ? 'disabled' : ''} data-task="${task.id}" data-cat="${category}">
+        <input type="checkbox" ${task.done ? 'checked' : ''} data-task="${task.id}" data-cat="${category}">
         <span>${escapeHtml(task.text)}</span>
         <button class="del" data-del="${task.id}" data-cat="${category}" title="Remover missão">✕</button>
       `;
       ul.appendChild(li);
     });
+  }
 
-    document.getElementById('exempt-banner').style.display = (category === 'financas' && isExemptCategory) ? 'flex' : 'none';
+  function renderFinancas(){
+    const ul = document.getElementById('list-gastos');
+    if(!ul) return;
+    ul.innerHTML = '';
+    let totalGasto = 0;
+    
+    state.gastos.forEach(g => {
+      totalGasto += g.valor;
+      const li = document.createElement('li');
+      li.className = 'expense';
+      li.style.cssText = 'display:flex; justify-content:space-between; align-items:center; background:var(--panel-alt); border:1px solid var(--line); padding:8px 10px; font-size:14px; margin-bottom:6px;';
+      li.innerHTML = `
+        <span>${escapeHtml(g.nome)}</span>
+        <span class="val" style="color:var(--wis); font-weight:700;">R$ ${g.valor.toFixed(2)}</span>
+        <button class="del" data-delgasto="${g.id}" title="Remover" style="background:none; border:none; color:var(--muted); cursor:pointer; font-size:16px;">✕</button>
+      `;
+      ul.appendChild(li);
+    });
+
+    const restante = (Number(state.budget) || 0) - totalGasto;
+    const box = document.getElementById('remaining-box');
+    if(box){
+      box.className = 'remaining ' + (restante >= 0 ? 'ok' : 'warn');
+      document.getElementById('remaining-val').textContent = 'R$ ' + restante.toFixed(2);
+    }
+    const budgetInput = document.getElementById('input-budget');
+    if(budgetInput) budgetInput.value = state.budget || '';
+
+    const exemptBanner = document.getElementById('exempt-banner');
+    if(exemptBanner){
+      exemptBanner.style.display = state.finance.exemptionActive ? 'flex' : 'none';
+    }
   }
 
   function renderPunishment(){
     const ul = document.getElementById('list-punicao');
+    if(!ul) return;
     ul.innerHTML = '';
     state.penalty.tasks.forEach(t => {
       const li = document.createElement('li');
@@ -818,9 +849,13 @@
     const goal = state.finance.weeklyGoal;
     const progress = state.finance.weeklyProgress;
     const pct = goal > 0 ? Math.min(100, (progress/goal)*100) : 0;
-    document.getElementById('goal-fill').style.width = pct + '%';
-    document.getElementById('goal-progress-text').textContent = `R$ ${progress.toFixed(2)} / R$ ${goal.toFixed(2)}`;
-    document.getElementById('goal-status-text').textContent = state.finance.exemptionActive ? 'Isento até domingo ✅' : '';
+    const goalFill = document.getElementById('goal-fill');
+    const goalProgressText = document.getElementById('goal-progress-text');
+    const goalStatusText = document.getElementById('goal-status-text');
+
+    if(goalFill) goalFill.style.width = pct + '%';
+    if(goalProgressText) goalProgressText.textContent = `R$ ${progress.toFixed(2)} / R$ ${goal.toFixed(2)}`;
+    if(goalStatusText) goalStatusText.textContent = state.finance.exemptionActive ? 'Isento até domingo ✅' : '';
   }
 
   function escapeHtml(str){
@@ -831,7 +866,7 @@
 
   // ---------- ações do jogador ----------
   function addTask(category, text){
-    if(state.penalty.active) return; // <-- Trava de segurança adicionada aqui
+    if(state.penalty.active) return;
     if(!text || !text.trim()) return;
     const id = cryptoId();
     state.tasks[category].push({ id, text: text.trim(), done: false });
@@ -840,26 +875,46 @@
   }
 
   function completeTask(category, id){
-    if(state.penalty.active) return; // painel bloqueado durante a penalidade
+    if(state.penalty.active) return;
     const task = state.tasks[category].find(t => t.id === id);
     if(!task || task.done) return;
     task.done = true;
 
-    const attrMap = { treino: 'str', estudos: 'int', financas: 'wis' };
+    const attrMap = { treino: 'str', estudos: 'int' };
     const attr = attrMap[category];
-    gainAttr(attr, 1);
-    gainExp(10);
-    notify('Aviso do Sistema', `Missão Diária Concluída! +10 EXP · +1 ${attr.toUpperCase()}`);
+    if(attr) {
+      gainAttr(attr, 1);
+      gainExp(10);
+      notify('Aviso do Sistema', `Missão Diária Concluída! +10 EXP · +1 ${attr.toUpperCase()}`);
+    }
 
     save(); render();
     playCompleteAnimation(id);
   }
 
   function deleteTaskAnimated(category, id){
-    if(state.penalty.active) return; // <-- Adicione esta linha aqui!
+    if(state.penalty.active) return;
     const li = document.querySelector(`li[data-id="${id}"]`);
     const commit = () => { state.tasks[category] = state.tasks[category].filter(t => t.id !== id); save(); render(); };
     if(li){ li.classList.add('removing'); setTimeout(commit, 220); } else { commit(); }
+  }
+  
+  function addGasto(nome, valor){
+    if(state.penalty.active) return;
+    if(!nome || !nome.trim() || isNaN(valor) || valor <= 0) return;
+    state.gastos.push({ id: cryptoId(), nome: nome.trim(), valor: Number(valor) });
+
+    gainAttr('wis', 1);
+    gainExp(5);
+    notify('Aviso do Sistema', `Gasto Registrado: Percepção Aumentada! +5 EXP · +1 WIS`);
+
+    save(); render();
+  }
+
+  function deleteGasto(id){
+    if(state.penalty.active) return;
+    state.gastos = state.gastos.filter(g => g.id !== id);
+    save(); render();
   }
 
   // ---------- eventos ----------
@@ -867,31 +922,34 @@
     btn.addEventListener('click', () => {
       const cat = btn.getAttribute('data-add');
       const input = document.getElementById('input-' + cat);
-      addTask(cat, input.value);
-      input.value = '';
-    });
-  });
-
-  ['input-treino','input-estudos','input-financas'].forEach(id => {
-    document.getElementById(id).addEventListener('keydown', e => {
-      if(e.key === 'Enter'){
-        const cat = id.replace('input-','');
-        addTask(cat, e.target.value);
-        e.target.value = '';
+      if(input) {
+        addTask(cat, input.value);
+        input.value = '';
       }
     });
   });
 
-  // clique na linha inteira da missão alterna concluído (mais fácil de tocar durante o treino)
+  ['input-treino','input-estudos'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el){
+      el.addEventListener('keydown', e => {
+        if(e.key === 'Enter'){
+          const cat = id.replace('input-','');
+          addTask(cat, e.target.value);
+          e.target.value = '';
+        }
+      });
+    }
+  });
+
   document.body.addEventListener('click', e => {
-    if(e.target.closest('button')) return; // botões tratam o próprio clique abaixo
+    if(e.target.closest('button')) return;
 
     const taskRow = e.target.closest('.task');
     if(taskRow && !state.penalty.active){
       const cat = taskRow.getAttribute('data-cat');
       const id = taskRow.getAttribute('data-id');
-      const isExempt = taskRow.classList.contains('exempt');
-      if(!isExempt) completeTask(cat, id);
+      completeTask(cat, id);
       return;
     }
 
@@ -920,30 +978,72 @@
     li.addEventListener('animationend', ()=> li.classList.remove('task-enter'), { once:true });
   }
 
-  document.getElementById('btn-set-start').addEventListener('click', () => {
-    const val = document.getElementById('input-start-hour').value || '06:00';
-    applyStartHour(val);
-    save(); render();
-    notify('Aviso do Sistema', `Ciclo diário configurado para as ${val}. Você tem 24h para concluir as missões.`);
-  });
+  const setStartBtn = document.getElementById('btn-set-start');
+  if(setStartBtn){
+    setStartBtn.addEventListener('click', () => {
+      const val = document.getElementById('input-start-hour').value || '06:00';
+      applyStartHour(val);
+      save(); render();
+      notify('Aviso do Sistema', `Ciclo diário configurado para as ${val}. Você tem 24h para concluir as missões.`);
+    });
+  }
 
-  document.getElementById('btn-force-end').addEventListener('click', forceCycleEnd);
+  const forceEndBtn = document.getElementById('btn-force-end');
+  if(forceEndBtn) forceEndBtn.addEventListener('click', forceCycleEnd);
 
-  document.getElementById('btn-silence-alarm').addEventListener('click', () => {
-    stopDangerAlarm();
-    notify('Aviso do Sistema', 'Alarme silenciado. A Missão de Punição Física continua pendente.');
-  });
+  const silenceAlarmBtn = document.getElementById('btn-silence-alarm');
+  if(silenceAlarmBtn){
+    silenceAlarmBtn.addEventListener('click', () => {
+      stopDangerAlarm();
+      notify('Aviso do Sistema', 'Alarme silenciado. A Missão de Punição Física continua pendente.');
+    });
+  }
 
-  document.getElementById('btn-set-goal').addEventListener('click', () => {
-    const input = document.getElementById('input-weekly-goal');
-    setWeeklyGoal(parseFloat(input.value));
-    input.value = '';
-  });
+  const setGoalBtn = document.getElementById('btn-set-goal');
+  if(setGoalBtn){
+    setGoalBtn.addEventListener('click', () => {
+      const input = document.getElementById('input-weekly-goal');
+      if(input){
+        setWeeklyGoal(parseFloat(input.value));
+        input.value = '';
+      }
+    });
+  }
 
-  document.getElementById('btn-add-savings').addEventListener('click', () => {
-    const input = document.getElementById('input-savings');
-    addSavings(parseFloat(input.value));
-    input.value = '';
+  const addSavingsBtn = document.getElementById('btn-add-savings');
+  if(addSavingsBtn){
+    addSavingsBtn.addEventListener('click', () => {
+      const input = document.getElementById('input-savings');
+      if(input){
+        addSavings(parseFloat(input.value));
+        input.value = '';
+      }
+    });
+  }
+
+  const inputBudget = document.getElementById('input-budget');
+  if(inputBudget){
+    inputBudget.addEventListener('change', e => {
+      state.budget = Number(e.target.value) || 0;
+      save(); render();
+    });
+  }
+
+  const btnAddGasto = document.getElementById('btn-add-gasto');
+  if(btnAddGasto){
+    btnAddGasto.addEventListener('click', () => {
+      const nomeEl = document.getElementById('input-gasto-nome');
+      const valorEl = document.getElementById('input-gasto-valor');
+      if(nomeEl && valorEl){
+        addGasto(nomeEl.value, parseFloat(valorEl.value));
+        nomeEl.value = ''; valorEl.value = '';
+      }
+    });
+  }
+
+  document.body.addEventListener('click', e => {
+    const delGasto = e.target.closest('button[data-delgasto]');
+    if(delGasto){ deleteGasto(delGasto.getAttribute('data-delgasto')); }
   });
 
   // ---------- inicialização ----------
@@ -959,7 +1059,6 @@
 
   render();
 
-  // laço principal: verifica a cada segundo se o ciclo terminou
   setInterval(() => {
     if(!state.penalty.active && state.cycle.cycleEnd && Date.now() >= state.cycle.cycleEnd && !state.cycle.resolved){
       resolveCycleEnd();
