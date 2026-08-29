@@ -1,0 +1,16 @@
+{
+  "name": "O Sistema — Painel do Jogador",
+  "short_name": "O Sistema",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#030509",
+  "theme_color": "#030509",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3067/3067400.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
