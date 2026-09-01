@@ -24,11 +24,11 @@
     --danger: #ff3b5c;
     --good: #26ffb0;
     --warn: #ffb347;
+    --gold: #f5c542;
     --tap: 50px;
   }
 
   *{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
   html{ font-size: 16px; }
 
   body{
@@ -45,20 +45,19 @@
     font-weight: 500;
     padding: 12px 12px 70px;
     position: relative;
-    transition: background-color .6s ease;
   }
 
-  h1,h2,h3, .num, .lvl-num, .clock{ font-family:'Orbitron', sans-serif; }
+  h1,h2,h3, .num, .lvl-num, .clock, .pomodoro-clock{ font-family:'Orbitron', sans-serif; }
   ::selection{ background: rgba(47,111,255,0.4); }
 
+  /* overlay de perigo — única camada animada (otimização de repaint) */
   #penalty-overlay{
     display:none; position:fixed; inset:0; z-index:900; pointer-events:none;
-    background: radial-gradient(ellipse at 50% 40%, rgba(255,20,50,0.30), rgba(20,0,4,0.6) 75%);
+    background: radial-gradient(ellipse at 50% 40%, rgba(255,20,50,0.32), rgba(20,0,4,0.62) 75%);
+    will-change: opacity;
   }
   body.penalty-mode #penalty-overlay{ display:block; animation: dangerFlash 1.1s ease-in-out infinite; }
-  body.penalty-mode{ animation: bodyFlash 1.1s ease-in-out infinite; }
-  @keyframes dangerFlash{ 0%,100%{ opacity:.35; } 50%{ opacity:.8; } }
-  @keyframes bodyFlash{ 0%,100%{ background-color:#030509; } 50%{ background-color:#1c0006; } }
+  @keyframes dangerFlash{ 0%,100%{ opacity:.32; } 50%{ opacity:.82; } }
 
   .wrap{ max-width: 900px; margin: 0 auto; position:relative; z-index:1; }
 
@@ -96,6 +95,17 @@
   .debug-box{ margin-top:12px; padding-top:10px; border-top:1px dashed var(--line); display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
   .debug-box .tag{ font-size:9px; letter-spacing:1.5px; color:var(--muted); border:1px dashed var(--muted); padding:3px 7px; text-transform:uppercase; }
   .debug-box small{ color:var(--muted); font-size:11px; }
+
+  .sanctuary-box{ margin-top:12px; padding-top:12px; border-top:1px dashed var(--line); }
+  .sanctuary-box button{ border-color:var(--warn); color:var(--warn); background:rgba(255,179,71,0.1); width:100%; }
+  .sanctuary-box button:hover{ background:rgba(255,179,71,0.22); box-shadow:0 0 12px rgba(255,179,71,.4); }
+  .sanctuary-box small{ display:block; margin-top:6px; color:var(--muted); }
+
+  /* ---------- Backup / Anti-Wipe ---------- */
+  .backup-box{ margin-top:12px; padding-top:12px; border-top:1px dashed var(--line); }
+  .backup-box .row{ display:flex; gap:8px; flex-wrap:wrap; }
+  .backup-box .row button{ flex:1; min-width:140px; }
+  .backup-box small{ display:block; margin-top:6px; color:var(--muted); }
 
   .status-head{ display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:10px; margin-bottom: 14px; border-bottom: 1px solid var(--line); padding-bottom: 12px; }
   .status-title{ font-size: 22px; font-weight: 900; letter-spacing: 1.5px; margin: 0; color:#fff; text-shadow: 0 0 18px rgba(47,216,255,0.45); }
@@ -144,12 +154,11 @@
   }
   .task.treino input[type=checkbox]:checked{ background: var(--str); border-color:var(--str); box-shadow:0 0 8px var(--str);}
   .task.estudos input[type=checkbox]:checked{ background: var(--int); border-color:var(--int); box-shadow:0 0 8px var(--int);}
-  .task.financas input[type=checkbox]:checked{ background: var(--wis); border-color:var(--wis); box-shadow:0 0 8px var(--wis);}
   .task span{ flex:1; }
-  .task.done span{ color: var(--muted); text-decoration: line-through; }
-  .task.exempt{ border-color: var(--good); background: rgba(38,255,176,0.07); }
-  .task.exempt input[type=checkbox]{ background: var(--good); border-color: var(--good); }
-  .task.exempt span{ color: var(--good); }
+  .task .task-main{ display:flex; flex-direction:column; gap:2px; flex:1; min-width:0; }
+  .task .task-title{ font-weight:700; }
+  .task .task-sub{ font-size:12px; color:var(--muted); }
+  .task.done span, .task.done .task-title, .task.done .task-sub{ color: var(--muted); text-decoration: line-through; }
   .task button.del{
     background:none; border:none; color:var(--muted); cursor:pointer; font-size:20px; padding:6px 8px;
     min-width:40px; min-height:40px; transition: transform .15s ease, color .15s ease;
@@ -169,8 +178,13 @@
   }
 
   .add-row{ display:flex; gap:8px; margin-top:auto; flex-wrap:wrap; }
-  .add-row.gasto-row { display: grid; grid-template-columns: 2fr 1fr; gap: 8px; }
+  .add-row.gasto-row{ display: grid; grid-template-columns: 2fr 1fr; gap: 8px; }
   .add-row input{ flex:1; min-width:120px; }
+
+  .exercise-form{ display:flex; flex-direction:column; gap:8px; margin-top:auto; }
+  .exercise-form .row-3{ display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; }
+  .exercise-form .row-3 input{ min-width:0; }
+  .exercise-form small{ color: var(--muted); font-size:11px; }
 
   input[type=text], input[type=number], input[type=time]{
     background:#050810; border:1px solid var(--line); color:var(--text);
@@ -187,7 +201,7 @@
   }
   button:hover{ background: rgba(47,111,255,0.25); box-shadow:0 0 12px rgba(0,229,255,.35); }
   button:active{ transform: scale(.95); box-shadow:0 0 16px rgba(0,229,255,.5); }
-  button:disabled{ opacity:.35; cursor:not-allowed; box-shadow:none; }
+  button:disabled{ opacity:.35; cursor:not-allowed; box-shadow:none; transform:none; }
   button.ghost{ background:transparent; border-color: var(--line); color: var(--muted); }
   button.ghost:hover{ color: var(--text); border-color: var(--muted); box-shadow:none; }
   button.danger-btn{ border-color: var(--danger); color: var(--danger); background: rgba(255,59,92,0.1); }
@@ -200,11 +214,61 @@
   .goal-fill{ height:100%; background: linear-gradient(90deg, var(--wis), var(--cyan)); transition: width .5s ease; width:0%; }
   .goal-text{ font-size:12px; color:var(--muted); display:flex; justify-content:space-between; }
 
+  .epic-overall-text{ font-size:12px; color:var(--muted); display:flex; justify-content:space-between; margin-bottom:6px; }
+  .epic-overall-track{ height:16px; background:#050810; border:1px solid var(--line); overflow:hidden; margin-bottom:14px; }
+  .epic-overall-fill{ height:100%; background: linear-gradient(90deg, var(--int), var(--cyan)); box-shadow:0 0 10px rgba(53,208,255,.6); transition:width .5s ease; width:0%; }
+
+  .epic-block{ background:var(--panel-alt); border:1px solid var(--line); padding:10px 12px; margin-bottom:8px; }
+  .epic-block.complete{ border-color: var(--good); background: rgba(38,255,176,0.06); }
+  .epic-block-head{ display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:6px; }
+  .epic-block-name{ font-weight:700; font-size:14px; }
+  .epic-block.complete .epic-block-name{ color: var(--good); }
+  .epic-block-count{ font-size:12px; color:var(--muted); white-space:nowrap; }
+  .epic-block-track{ height:8px; background:#050810; border:1px solid var(--line); overflow:hidden; margin-bottom:8px;}
+  .epic-block-fill{ height:100%; background:linear-gradient(90deg, var(--int), var(--cyan)); transition:width .4s ease; }
+  .epic-block-controls{ display:flex; gap:6px; }
+  .epic-block-controls button{ flex:1; padding:8px 4px; min-height:38px; font-size:13px; }
+  .epic-add-form{ display:grid; grid-template-columns: 2fr 1fr; gap:8px; margin-top:10px;}
+
+  /* ---------- Pomodoro ---------- */
+  .pomodoro-duration{ display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+  .pomodoro-duration label{ font-size:11px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; white-space:nowrap;}
+  .pomodoro-clock{ font-size: clamp(34px, 10vw, 48px); font-weight:900; text-align:center; color:var(--wis); text-shadow:0 0 18px rgba(185,139,255,.5); margin: 8px 0; }
+  .pomodoro-controls{ display:grid; grid-template-columns: repeat(3,1fr); gap:8px; }
+  .pomodoro-controls button{ padding:10px 6px; font-size:13px; }
+  .pomodoro-meta{ text-align:center; font-size:12px; color:var(--muted); margin-top:6px; }
+
+  /* ---------- Loja do Mercador ---------- */
+  .shop-item{ display:flex; align-items:center; justify-content:space-between; gap:10px; background:var(--panel-alt); border:1px solid var(--line); padding:10px 12px; margin-bottom:8px; }
+  .shop-item .shop-name{ flex:1; font-size:14px; min-width:0; }
+  .shop-item .shop-cost{ color:var(--cyan); font-weight:700; font-size:14px; white-space:nowrap; }
+  .shop-item button.buy{ padding:8px 12px; min-height:40px; font-size:13px; }
+  .shop-item button.del-shop{ background:none;border:none;color:var(--muted);font-size:18px;padding:6px;cursor:pointer; min-width:36px; min-height:36px;}
+  .shop-add-form{ display:grid; grid-template-columns: 2fr 1fr; gap:8px; margin-top:10px; }
+
+  /* ---------- Boss Fight ---------- */
+  .boss-panel{ border-color: var(--gold); }
+  .boss-panel .corner{ border-color: var(--gold) !important; }
+  .boss-title{ color:#fff; font-size:19px; font-weight:900; letter-spacing:1px; margin:0 0 4px; text-shadow:0 0 16px rgba(245,197,66,.5); }
+  .boss-sub{ color:var(--muted); font-size:13px; margin-bottom:14px; }
+  .boss-locked{ background: rgba(255,255,255,0.03); border:1px dashed var(--line); padding:14px; text-align:center; color:var(--muted); font-size:13px; }
+  .boss-config{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; }
+  .boss-actions{ display:grid; grid-template-columns: 1fr 1fr; gap:8px; }
+  .boss-actions .win-btn{ border-color:var(--good); color:var(--good); background:rgba(38,255,176,.1); }
+  .boss-actions .flee-btn{ border-color:var(--danger); color:var(--danger); background:rgba(255,59,92,.1); }
+  .boss-status{ font-size:12px; color:var(--good); margin-top:8px; min-height:14px; }
+
+  /* ---------- Painel Analítico (Chart.js) ---------- */
+  .analytics-panel h3{ font-size:14px; margin:16px 0 10px; color:var(--text); letter-spacing:.5px; }
+  .analytics-panel h3:first-of-type{ margin-top:0; }
+  .chart-box{ position:relative; height:220px; margin-bottom:8px; }
+  .chart-fallback{ color:var(--muted); font-size:12px; text-align:center; padding:30px 0; }
+
   #punishment-panel{ display:none; }
   body.penalty-mode #punishment-panel{ display:block; }
   .punish-title{ font-size:19px; font-weight:900; letter-spacing:1.5px; margin:0 0 4px; color:#fff; position:relative; display:inline-block; }
   .glitch{ position:relative; }
-  .glitch::before, .glitch::after{ content: attr(data-text); position:absolute; left:0; top:0; width:100%; overflow:hidden; }
+  .glitch::before, .glitch::after{ content: attr(data-text); position:absolute; left:0; top:0; width:100%; overflow:hidden; will-change: transform; }
   .glitch::before{ color:#ff3b5c; clip-path: inset(0 0 55% 0); animation: glitchTop 1.3s infinite linear alternate-reverse; }
   .glitch::after{ color:#35d0ff; clip-path: inset(55% 0 0 0); animation: glitchBottom 1.7s infinite linear alternate-reverse; }
   @keyframes glitchTop{ 0%{transform:translate(0,0);} 20%{transform:translate(-2px,-1px);} 40%{transform:translate(2px,1px);} 60%{transform:translate(-1px,2px);} 80%{transform:translate(1px,-2px);} 100%{transform:translate(0,0);} }
@@ -279,6 +343,22 @@
       <button id="btn-set-start" class="block">Confirmar Horário</button>
     </div>
 
+    <div class="sanctuary-box">
+      <div class="sub-label">Santuário — Descanso Seguro (1x por semana)</div>
+      <button id="btn-sanctuary">🔥 Usar Santuário</button>
+      <small id="sanctuary-status">Disponível: 1 descanso seguro por semana.</small>
+    </div>
+
+    <div class="backup-box">
+      <div class="sub-label">💾 Backup do Sistema (Anti-Wipe)</div>
+      <div class="row">
+        <button id="btn-export" class="ghost">⬇ Exportar Save (.json)</button>
+        <button id="btn-import-trigger" class="ghost">⬆ Importar Save</button>
+      </div>
+      <input type="file" id="input-import-file" accept="application/json" style="display:none;">
+      <small>Gere um arquivo de backup para não perder o progresso se o armazenamento do navegador for limpo.</small>
+    </div>
+
     <div class="debug-box">
       <span class="tag">Ferramenta de Teste</span>
       <button class="ghost" id="btn-force-end">Forçar Fim de Ciclo</button>
@@ -327,19 +407,26 @@
   <!-- QUESTS -->
   <div class="quests">
 
-    <!-- TREINO -->
+    <!-- TREINO — Módulo de Evolução Física -->
     <section class="system-frame quest-panel treino" id="panel-treino">
       <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
       <div class="quest-head"><span class="quest-tag">Missão de Força</span></div>
       <h2>Treino</h2>
       <ul class="task-list" id="list-treino"></ul>
-      <div class="add-row">
-        <input type="text" id="input-treino" placeholder="Ex: Treino de Calistenia: 50 Flexões, 20 Barras">
-        <button data-add="treino">+ Missão</button>
+
+      <div class="exercise-form">
+        <input type="text" id="input-treino-exercicio" placeholder="Exercício (ex: Flexões, Prancha)">
+        <div class="row-3">
+          <input type="number" id="input-treino-series" placeholder="Séries" min="0">
+          <input type="number" id="input-treino-reps" placeholder="Repetições" min="0">
+          <input type="number" id="input-treino-isometria" placeholder="Isometria (s)" min="0">
+        </div>
+        <small>Preencha Repetições OU Isometria (ou ambos), conforme o movimento.</small>
+        <button id="btn-add-treino" class="block">+ Missão de Força</button>
       </div>
     </section>
 
-    <!-- ESTUDOS -->
+    <!-- ESTUDOS — Missão Épica + Pomodoro -->
     <section class="system-frame quest-panel estudos" id="panel-estudos">
       <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
       <div class="quest-head"><span class="quest-tag">Missão de Inteligência</span></div>
@@ -349,9 +436,36 @@
         <input type="text" id="input-estudos" placeholder="Ex: Praticar algoritmos em JavaScript">
         <button data-add="estudos">+ Missão</button>
       </div>
+
+      <hr class="divider">
+      <div class="sub-label">🎯 Missão Épica — Progressão do Edital (não reseta diariamente)</div>
+      <div class="epic-overall-text"><span id="epic-overall-text">0 / 0 tópicos (0%)</span></div>
+      <div class="epic-overall-track"><div class="epic-overall-fill" id="epic-overall-fill"></div></div>
+      <div id="list-epic"></div>
+      <div class="epic-add-form">
+        <input type="text" id="input-epic-name" placeholder="Bloco (ex: Direito Tributário)">
+        <input type="number" id="input-epic-total" placeholder="Nº tópicos" min="1">
+      </div>
+      <div style="margin-top:8px;">
+        <button id="btn-add-epic" class="block">+ Adicionar Bloco</button>
+      </div>
+
+      <hr class="divider">
+      <div class="sub-label">⏱ Pomodoro — Foco Profundo</div>
+      <div class="pomodoro-duration">
+        <label for="input-pomodoro-min">Duração (min)</label>
+        <input type="number" id="input-pomodoro-min" value="25" min="5" max="120">
+      </div>
+      <div class="pomodoro-clock" id="pomodoro-clock">25:00</div>
+      <div class="pomodoro-controls">
+        <button id="btn-pomodoro-start">▶ Iniciar</button>
+        <button id="btn-pomodoro-pause" disabled>⏸ Pausar</button>
+        <button id="btn-pomodoro-cancel" class="danger-btn" disabled>✕ Cancelar</button>
+      </div>
+      <div class="pomodoro-meta" id="pomodoro-meta">Concluir sem pausar concede bônus de +1 INT.</div>
     </section>
 
-    <!-- FINANÇAS: META SEMANAL CONECTADA AOS GANHOS E CAPITAL -->
+    <!-- FINANÇAS — Capital, Meta Semanal, Loja do Mercador -->
     <section class="system-frame quest-panel financas" id="panel-financas">
       <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
       <div class="quest-head"><span class="quest-tag">Missão de Percepção</span></div>
@@ -361,20 +475,18 @@
         ✅ META SEMANAL CONCLUÍDA — ISENÇÃO ATIVADA
       </div>
 
-      <!-- Capital Total (Calculado automaticamente: Ganhos - Gastos) -->
       <div class="remaining ok" id="remaining-box" style="background:var(--panel-alt); border:1px solid var(--line); padding:12px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:baseline;">
         <span style="font-size:12px; letter-spacing:1px; text-transform:uppercase;">Capital Total Disponível</span>
         <span class="num" id="capital-val" style="font-size:20px; font-weight:700; color:var(--cyan);">R$ 0,00</span>
       </div>
 
-      <!-- Registrar Ganho (Soma direto no Capital E na Meta Semanal) -->
       <div class="sub-label">Adicionar Entrada / Ganho</div>
       <div class="add-row gasto-row" style="margin-bottom: 8px;">
         <input type="text" id="input-ganho-nome" placeholder="Origem (ex: Salário, Freelance)">
         <input type="number" id="input-ganho-valor" placeholder="R$">
       </div>
       <div style="margin-bottom: 12px;">
-        <button id="btn-add-ganho" class="block" style="border-color:var(--good); color:var(--good); background:rgba(38,255,176,0.1);">+ Registrar Ganho (Soma no Capital & Meta)</button>
+        <button id="btn-add-ganho" class="block" style="border-color:var(--good); color:var(--good); background:rgba(38,255,176,0.1);">+ Registrar Ganho (Soma no Capital &amp; Meta)</button>
       </div>
 
       <hr class="divider">
@@ -391,32 +503,201 @@
 
       <hr class="divider">
       <div class="sub-label">Meta Semanal de Economia (reinicia toda segunda-feira)</div>
-
       <div class="add-row">
         <input type="number" id="input-weekly-goal" placeholder="Meta da semana (R$)">
         <button id="btn-set-goal">Definir Meta</button>
       </div>
-
       <div class="goal-track"><div class="goal-fill" id="goal-fill"></div></div>
       <div class="goal-text"><span id="goal-progress-text">R$ 0 / R$ 0</span><span id="goal-status-text"></span></div>
+
+      <hr class="divider">
+      <div class="sub-label">🛒 Loja do Mercador — Recompensas da Vida Real</div>
+      <div id="list-shop"></div>
+      <div class="shop-add-form">
+        <input type="text" id="input-shop-name" placeholder="Recompensa (ex: Jogo novo)">
+        <input type="number" id="input-shop-cost" placeholder="Custo (R$)">
+      </div>
+      <div style="margin-top:8px;">
+        <button id="btn-add-shop" class="block">+ Cadastrar Recompensa</button>
+      </div>
     </section>
 
   </div>
 
-  <footer>O SISTEMA — progresso salvo automaticamente neste navegador.</footer>
+  <!-- BOSS FIGHT -->
+  <section class="system-frame boss-panel" id="panel-boss">
+    <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+    <p class="eyebrow" style="color:var(--gold);">Evento Especial de Fim de Semana</p>
+    <h2 class="boss-title">👑 Boss Fight — Simulado PMDF</h2>
+    <p class="boss-sub">Vencer concede um loot massivo de EXP. Fugir ou não bater a meta ativa uma penalidade severa nos atributos.</p>
+
+    <div id="boss-locked-msg" class="boss-locked" style="display:none;">🔒 A Batalha de Chefe só pode ser enfrentada aos sábados e domingos. Configure a meta com antecedência.</div>
+
+    <div class="boss-config">
+      <div class="field-group">
+        <label for="input-boss-total">Total de Questões</label>
+        <input type="number" id="input-boss-total" min="1">
+      </div>
+      <div class="field-group">
+        <label for="input-boss-target">Meta de Acertos</label>
+        <input type="number" id="input-boss-target" min="1">
+      </div>
+    </div>
+    <button id="btn-save-boss-config" class="ghost block" style="margin-bottom:12px;">Salvar Configuração</button>
+
+    <div id="boss-body">
+      <div class="add-row">
+        <input type="number" id="input-boss-acertos" placeholder="Acertos obtidos no simulado" min="0">
+      </div>
+      <div class="boss-actions">
+        <button class="win-btn" id="btn-boss-submit">🏆 Registrar Resultado</button>
+        <button class="flee-btn" id="btn-boss-flee">🏳 Fugir da Batalha</button>
+      </div>
+      <div class="boss-status" id="boss-status"></div>
+    </div>
+  </section>
+
+  <!-- PAINEL ANALÍTICO (Chart.js) -->
+  <section class="system-frame analytics-panel">
+    <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+    <p class="eyebrow">Painel Analítico</p>
+    <h2 style="margin:0 0 4px;">📊 Desempenho Semanal</h2>
+    <p class="boss-sub" style="margin-bottom:4px;">Últimas 8 semanas, calculadas a partir das missões concluídas.</p>
+
+    <h3>Progressão de Força (volume de reps e isometria)</h3>
+    <div class="chart-box"><canvas id="chart-strength"></canvas></div>
+
+    <h3>Ritmo de Estudos (tópicos do edital e horas focadas)</h3>
+    <div class="chart-box"><canvas id="chart-study"></canvas></div>
+  </section>
+
+  <footer>O SISTEMA — progresso salvo automaticamente neste navegador. Exporte seu save regularmente.</footer>
 </div>
 
-<script>
-(function(){
-  const STORAGE_KEY = 'osistema_save_v8';
+<!-- Chart.js via CDN — usado pelo Painel Analítico -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.min.js"></script>
 
+<script>
+/* =========================================================================
+   O SISTEMA — script principal (Patch 2.0 / v10)
+   -------------------------------------------------------------------------
+   Estrutura:
+     1. STORAGE       -> load/save no localStorage + export/import (.json)
+     2. STATE         -> estado padrão e utilitários de data
+     3. TIME & CYCLE  -> cálculo do ciclo de 24h e rollover semanal
+     4. GAME LOGIC    -> exp/nível/atributos, tarefas, missão épica,
+                         finanças, loja, santuário, boss fight, penalidade
+     5. ANALYTICS     -> registro de métricas semanais para os gráficos
+     6. AUDIO         -> Web Audio API (alarme e som suave)
+     7. CHARTS        -> integração com Chart.js
+     8. POMODORO      -> timer de foco (estado transiente, não persistido)
+     9. RENDER        -> atualização de UI (cache de elementos "dom")
+    10. EVENTS        -> listeners de clique/teclado
+    11. INIT          -> inicialização + loop principal (1x/segundo)
+
+   NOVA ESTRUTURA DE DADOS (para alimentar os gráficos):
+     state.analytics.weekly = {
+       "AAAA-MM-DD" (segunda-feira da semana): {
+         volumeReps:   número total de repetições concluídas na semana
+         isometriaSec: segundos totais de isometria concluídos na semana
+         topicos:      tópicos do edital fechados na semana (Missão Épica)
+         focoMinutos:  minutos de Pomodoro concluídos na semana
+       }
+     }
+     Cada semana é uma chave nova; os gráficos leem as últimas 8 chaves.
+   ========================================================================= */
+(function(){
+
+  /* ======================== 1. STORAGE ======================== */
+  const STORAGE_KEY = 'osistema_save_v10';
+
+  function saveState(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  function mergeWithDefaults(parsed){
+    return Object.assign(structuredCloneSafe(defaultState), parsed, {
+      attrs: Object.assign({str:10,int:10,wis:10}, parsed.attrs || {}),
+      cycle: Object.assign({startHour:'06:00', cycleStart:null, cycleEnd:null, resolved:false}, parsed.cycle || {}),
+      penalty: Object.assign({active:false, tasks:[]}, parsed.penalty || {}),
+      tasks: Object.assign({treino:[],estudos:[]}, parsed.tasks || {}),
+      epic: Object.assign({blocks:[]}, parsed.epic || {}),
+      sanctuary: Object.assign({usedThisWeek:false}, parsed.sanctuary || {}),
+      ganhos: parsed.ganhos || [],
+      gastos: parsed.gastos || [],
+      finance: Object.assign({weeklyGoal:0, weeklyProgress:0, exemptionActive:false}, parsed.finance || {}),
+      weekStart: parsed.weekStart || dateKey(mondayOf(new Date())),
+      shop: Object.assign({items:[]}, parsed.shop || {}),
+      bossFight: Object.assign({totalQuestions:60, targetCorrect:42, completedThisWeekend:false}, parsed.bossFight || {}),
+      analytics: Object.assign({weekly:{}}, parsed.analytics || {})
+    });
+  }
+
+  function loadState(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return structuredCloneSafe(defaultState);
+      return mergeWithDefaults(JSON.parse(raw));
+    }catch(e){
+      console.error('Falha ao carregar save, iniciando novo.', e);
+      return structuredCloneSafe(defaultState);
+    }
+  }
+
+  function structuredCloneSafe(obj){ return JSON.parse(JSON.stringify(obj)); }
+
+  // Anti-Wipe: exporta o estado atual como arquivo .json para download
+  function exportSave(){
+    const dataStr = JSON.stringify(state, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const today = new Date().toISOString().slice(0,10);
+    a.href = url;
+    a.download = `osistema-save-${today}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    notify('Aviso do Sistema', 'Save exportado com sucesso.');
+  }
+
+  // Anti-Wipe: importa um arquivo .json previamente exportado
+  function importSaveFromFile(file){
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try{
+        const parsed = JSON.parse(e.target.result);
+        if(typeof parsed !== 'object' || parsed === null || typeof parsed.level !== 'number' || !parsed.attrs){
+          throw new Error('Formato de save inválido.');
+        }
+        state = mergeWithDefaults(parsed);
+        saveState();
+        render();
+        notify('Aviso do Sistema', 'Save importado com sucesso! Progresso restaurado.', 'levelup');
+      }catch(err){
+        console.error(err);
+        notify('Aviso do Sistema', 'Falha ao importar: arquivo inválido ou corrompido.', 'danger');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  /* ======================== 2. STATE ======================== */
+
+  // Geração de ID: usa crypto.randomUUID() quando disponível (contexto seguro);
+  // cai para um gerador manual em navegadores/contexos sem suporte.
   function cryptoId(){
-    return 'id-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,8);
+    if(window.crypto && typeof window.crypto.randomUUID === 'function'){
+      return window.crypto.randomUUID();
+    }
+    return 'id-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,10);
   }
 
   function mondayOf(date){
     const d = new Date(date);
-    const day = d.getDay(); 
+    const day = d.getDay(); // 0=domingo ... 6=sábado
     const diff = (day === 0 ? -6 : 1 - day);
     d.setDate(d.getDate() + diff);
     d.setHours(0,0,0,0);
@@ -425,86 +706,56 @@
   function dateKey(d){
     return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
   }
+  function isWeekend(){
+    const day = new Date().getDay();
+    return day === 0 || day === 6;
+  }
 
   const defaultState = {
     level: 1,
     exp: 0,
     attrs: { str: 10, int: 10, wis: 10 },
+    weekStart: dateKey(mondayOf(new Date())),
     cycle: { startHour: '06:00', cycleStart: null, cycleEnd: null, resolved: false },
     penalty: { active: false, tasks: [] },
     tasks: {
       treino: [
-        { id: cryptoId(), text: 'Treino de Calistenia: 50 Flexões, 20 Barras', done: false }
+        { id: cryptoId(), exercicio: 'Flexões', series: 4, repeticoes: 15, isometria: 0, done: false },
+        { id: cryptoId(), exercicio: 'Barra Fixa', series: 3, repeticoes: 8, isometria: 0, done: false },
+        { id: cryptoId(), exercicio: 'Prancha Abdominal', series: 3, repeticoes: 0, isometria: 40, done: false }
       ],
       estudos: [
         { id: cryptoId(), text: 'Revisar edital e questões para a Receita Federal', done: false },
         { id: cryptoId(), text: 'Praticar algoritmos em JavaScript', done: false }
       ]
     },
+    epic: {
+      blocks: [
+        { id: cryptoId(), name: 'Direito Tributário', totalUnits: 40, doneUnits: 0 },
+        { id: cryptoId(), name: 'Auditoria', totalUnits: 25, doneUnits: 0 },
+        { id: cryptoId(), name: 'Raciocínio Lógico', totalUnits: 15, doneUnits: 0 }
+      ]
+    },
+    sanctuary: { usedThisWeek: false },
     ganhos: [],
     gastos: [],
-    finance: { weeklyGoal: 0, weeklyProgress: 0, weekStart: dateKey(mondayOf(new Date())), exemptionActive: false }
+    finance: { weeklyGoal: 0, weeklyProgress: 0, exemptionActive: false },
+    // Loja do Mercador: recompensas da vida real que descontam do Capital Total
+    shop: {
+      items: [
+        { id: cryptoId(), name: '1 hora de jogo livre', cost: 20 },
+        { id: cryptoId(), name: 'Peça nova para o PC', cost: 300 }
+      ]
+    },
+    // Boss Fight: evento de simulado nos finais de semana
+    bossFight: { totalQuestions: 60, targetCorrect: 42, completedThisWeekend: false },
+    // Analytics: histórico semanal usado pelos gráficos (Chart.js)
+    analytics: { weekly: {} }
   };
 
-  function structuredCloneSafe(obj){ return JSON.parse(JSON.stringify(obj)); }
-
-  function loadState(){
-    try{
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if(!raw) return structuredCloneSafe(defaultState);
-      const parsed = JSON.parse(raw);
-      return Object.assign(structuredCloneSafe(defaultState), parsed, {
-        attrs: Object.assign({str:10,int:10,wis:10}, parsed.attrs || {}),
-        cycle: Object.assign({startHour:'06:00', cycleStart:null, cycleEnd:null, resolved:false}, parsed.cycle || {}),
-        penalty: Object.assign({active:false, tasks:[]}, parsed.penalty || {}),
-        tasks: Object.assign({treino:[],estudos:[]}, parsed.tasks || {}),
-        ganhos: parsed.ganhos || [],
-        gastos: parsed.gastos || [],
-        finance: Object.assign({weeklyGoal:0, weeklyProgress:0, weekStart:dateKey(mondayOf(new Date())), exemptionActive:false}, parsed.finance || {})
-      });
-    }catch(e){
-      console.error('Falha ao carregar save, iniciando novo.', e);
-      return structuredCloneSafe(defaultState);
-    }
-  }
-
   let state = loadState();
-  function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
 
-  function notify(headline, body, variant){
-    const stack = document.getElementById('notify-stack');
-    const el = document.createElement('div');
-    el.className = 'toast' + (variant ? ' ' + variant : '');
-    el.innerHTML = `<div class="t-head">${headline}</div><div class="t-body">${body}</div>`;
-    stack.appendChild(el);
-    setTimeout(()=>{
-      el.classList.add('fade');
-      setTimeout(()=> el.remove(), 420);
-    }, 3800);
-  }
-
-  function calcExpNeeded(level){ return 100 + (level - 1) * 50; }
-
-  function gainExp(amount){
-    state.exp += amount;
-    let needed = calcExpNeeded(state.level);
-    while(state.exp >= needed){
-      state.exp -= needed;
-      state.level += 1;
-      needed = calcExpNeeded(state.level);
-      notify('Aviso do Sistema', `LEVEL UP! Você alcançou o Nível ${state.level}.`, 'levelup');
-    }
-  }
-  function subtractExp(amount){ state.exp = Math.max(0, state.exp - amount); }
-  function gainAttr(attr, amount){ state.attrs[attr] = Math.max(0, state.attrs[attr] + amount); }
-
-  function pulseAttrDrop(attr){
-    const el = document.getElementById('attr-' + attr);
-    if(!el) return;
-    el.classList.add('attr-drop');
-    el.addEventListener('animationend', ()=> el.classList.remove('attr-drop'), { once:true });
-  }
-
+  /* ======================== 3. TIME & CYCLE ======================== */
   function computeCycleFromStartHour(startHourStr){
     const [h, m] = startHourStr.split(':').map(Number);
     const now = new Date();
@@ -521,21 +772,183 @@
     state.cycle.resolved = false;
   }
 
+  // Reinício semanal: meta financeira, Santuário e Boss Fight voltam toda segunda-feira.
   function checkWeeklyRollover(){
     const curMonday = dateKey(mondayOf(new Date()));
-    if(state.finance.weekStart !== curMonday){
-      state.finance.weekStart = curMonday;
+    if(state.weekStart !== curMonday){
+      state.weekStart = curMonday;
       state.finance.weeklyProgress = 0;
       state.finance.exemptionActive = false;
-      notify('Aviso do Sistema', 'Nova semana iniciada. Meta financeira reiniciada.');
+      state.sanctuary.usedThisWeek = false;
+      state.bossFight.completedThisWeekend = false;
+      notify('Aviso do Sistema', 'Nova semana iniciada. Metas, Santuário e Boss Fight reiniciados.');
     }
+  }
+
+  function pad(n){ return n.toString().padStart(2,'0'); }
+  function formatCountdown(ms){
+    if(ms < 0) ms = 0;
+    const totalSec = Math.floor(ms/1000);
+    const h = Math.floor(totalSec/3600);
+    const m = Math.floor((totalSec%3600)/60);
+    const s = totalSec%60;
+    return `${pad(h)}:${pad(m)}:${pad(s)}`;
+  }
+  function formatDateTime(ts){
+    return new Date(ts).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+  }
+
+  /* ======================== 4. GAME LOGIC ======================== */
+
+  // ---- Nível / EXP / atributos ----
+  function calcExpNeeded(level){ return 100 + (level - 1) * 50; }
+
+  function gainExp(amount){
+    state.exp += amount;
+    let needed = calcExpNeeded(state.level);
+    while(state.exp >= needed){
+      state.exp -= needed;
+      state.level += 1;
+      needed = calcExpNeeded(state.level);
+      notify('Aviso do Sistema', `LEVEL UP! Você alcançou o Nível ${state.level}.`, 'levelup');
+    }
+  }
+  function subtractExp(amount){ state.exp = Math.max(0, state.exp - amount); }
+  function gainAttr(attr, amount){ state.attrs[attr] = Math.max(0, state.attrs[attr] + amount); }
+
+  // ---- Treino (estruturado) ----
+  function addTreinoTask(exercicio, series, repeticoes, isometria){
+    if(state.penalty.active) return;
+    if(!exercicio || !exercicio.trim()) return;
+    if(series <= 0 && repeticoes <= 0 && isometria <= 0) return;
+    const id = cryptoId();
+    state.tasks.treino.push({ id, exercicio: exercicio.trim(), series, repeticoes, isometria, done:false });
+    saveState(); render();
+    playEnterAnimation(id);
+  }
+
+  // ---- Estudos (texto livre) ----
+  function addTask(category, text){
+    if(state.penalty.active) return;
+    if(!text || !text.trim()) return;
+    const id = cryptoId();
+    state.tasks[category].push({ id, text: text.trim(), done: false });
+    saveState(); render();
+    playEnterAnimation(id);
+  }
+
+  function completeTask(category, id){
+    if(state.penalty.active) return;
+    const task = state.tasks[category].find(t => t.id === id);
+    if(!task || task.done) return;
+    task.done = true;
+
+    const attrMap = { treino: 'str', estudos: 'int' };
+    const attr = attrMap[category];
+    if(attr){
+      gainAttr(attr, 1);
+      gainExp(10);
+      notify('Aviso do Sistema', `Missão Diária Concluída! +10 EXP · +1 ${attr.toUpperCase()}`);
+    }
+
+    // alimenta o Painel Analítico
+    if(category === 'treino'){
+      const volume = (task.series||0) * (task.repeticoes||0);
+      const isoTotal = (task.series||0) * (task.isometria||0);
+      if(volume > 0) logWeeklyMetric('volumeReps', volume);
+      if(isoTotal > 0) logWeeklyMetric('isometriaSec', isoTotal);
+    }
+
+    saveState(); render();
+    playCompleteAnimation(id);
+  }
+
+  function deleteTaskAnimated(category, id){
+    if(state.penalty.active) return;
+    const li = document.querySelector(`li[data-id="${id}"]`);
+    const commit = () => { state.tasks[category] = state.tasks[category].filter(t => t.id !== id); saveState(); render(); };
+    if(li){ li.classList.add('removing'); setTimeout(commit, 220); } else { commit(); }
+  }
+
+  // ---- Missão Épica ----
+  function addEpicBlock(name, totalUnits){
+    if(!name || !name.trim() || isNaN(totalUnits) || totalUnits <= 0) return;
+    state.epic.blocks.push({ id: cryptoId(), name: name.trim(), totalUnits: Math.round(totalUnits), doneUnits: 0 });
+    saveState(); render();
+  }
+
+  function incrementEpicBlock(id){
+    const block = state.epic.blocks.find(b => b.id === id);
+    if(!block || block.doneUnits >= block.totalUnits) return;
+    block.doneUnits += 1;
+    gainExp(3);
+    logWeeklyMetric('topicos', 1);
+    if(block.doneUnits >= block.totalUnits){
+      gainExp(15);
+      gainAttr('int', 1);
+      notify('Aviso do Sistema', `BLOCO CONCLUÍDO! "${block.name}" finalizado. +15 EXP · +1 INT`, 'levelup');
+    } else {
+      notify('Aviso do Sistema', `Tópico registrado em "${block.name}". +3 EXP`);
+    }
+    saveState(); render();
+  }
+
+  function decrementEpicBlock(id){
+    const block = state.epic.blocks.find(b => b.id === id);
+    if(!block) return;
+    block.doneUnits = Math.max(0, block.doneUnits - 1);
+    saveState(); render();
+  }
+
+  function deleteEpicBlock(id){
+    state.epic.blocks = state.epic.blocks.filter(b => b.id !== id);
+    saveState(); render();
+  }
+
+  // ---- Finanças ----
+  function computeCapital(){
+    const totalGanhos = state.ganhos.reduce((s,g) => s + g.valor, 0);
+    const totalGastos = state.gastos.reduce((s,g) => s + g.valor, 0);
+    return totalGanhos - totalGastos;
+  }
+
+  function addGanho(nome, valor){
+    if(state.penalty.active) return;
+    if(!nome || !nome.trim() || isNaN(valor) || valor <= 0) return;
+    state.ganhos.push({ id: cryptoId(), nome: nome.trim(), valor: Number(valor) });
+    state.finance.weeklyProgress += Number(valor);
+
+    gainAttr('wis', 1);
+    gainExp(5);
+    evaluateExemption();
+    notify('Aviso do Sistema', `Ganho registrado! Somado ao Capital e à Meta Semanal. +5 EXP · +1 WIS`, 'levelup');
+
+    saveState(); render();
+  }
+
+  function addGasto(nome, valor){
+    if(state.penalty.active) return;
+    if(!nome || !nome.trim() || isNaN(valor) || valor <= 0) return;
+    state.gastos.push({ id: cryptoId(), nome: nome.trim(), valor: Number(valor) });
+
+    gainAttr('wis', 1);
+    gainExp(5);
+    notify('Aviso do Sistema', `Gasto Registrado: Capital Atualizado · +5 EXP · +1 WIS`);
+
+    saveState(); render();
+  }
+
+  function deleteGasto(id){
+    if(state.penalty.active) return;
+    state.gastos = state.gastos.filter(g => g.id !== id);
+    saveState(); render();
   }
 
   function setWeeklyGoal(amount){
     if(isNaN(amount) || amount <= 0) return;
     state.finance.weeklyGoal = amount;
     evaluateExemption();
-    save(); render();
+    saveState(); render();
   }
 
   function evaluateExemption(){
@@ -546,18 +959,104 @@
     }
   }
 
+  // ---- Loja do Mercador ----
+  function addShopItem(name, cost){
+    if(!name || !name.trim() || isNaN(cost) || cost <= 0) return;
+    state.shop.items.push({ id: cryptoId(), name: name.trim(), cost: Math.round(cost) });
+    saveState(); render();
+  }
+
+  function deleteShopItem(id){
+    state.shop.items = state.shop.items.filter(i => i.id !== id);
+    saveState(); render();
+  }
+
+  function buyShopItem(id){
+    if(state.penalty.active) return;
+    const item = state.shop.items.find(i => i.id === id);
+    if(!item) return;
+    const capital = computeCapital();
+    if(capital < item.cost){
+      notify('Aviso do Sistema', 'Capital insuficiente para resgatar esta recompensa.', 'danger');
+      return;
+    }
+    // a compra vira um gasto — reutiliza o mesmo cálculo de capital, sem duplicar lógica
+    state.gastos.push({ id: cryptoId(), nome: 'Loja: ' + item.name, valor: item.cost });
+    notify('Aviso do Sistema', `Recompensa resgatada: ${item.name}! Aproveite.`, 'levelup');
+    saveState(); render();
+  }
+
+  // ---- Santuário ----
+  function useSanctuary(){
+    if(state.penalty.active){
+      notify('Aviso do Sistema', 'Não é possível descansar durante a Zona de Penalidade.', 'danger');
+      return;
+    }
+    if(state.sanctuary.usedThisWeek) return;
+    state.sanctuary.usedThisWeek = true;
+    notify('Aviso do Sistema', 'Você descansou no Santuário. O ciclo foi pausado sem penalidades — missões renovadas.', 'levelup');
+    startNewDay();
+  }
+
+  // ---- Boss Fight ----
+  function saveBossConfig(total, target){
+    if(!isNaN(total) && total > 0) state.bossFight.totalQuestions = Math.round(total);
+    if(!isNaN(target) && target > 0) state.bossFight.targetCorrect = Math.round(target);
+    saveState(); render();
+    notify('Aviso do Sistema', 'Configuração da Boss Fight salva.');
+  }
+
+  function submitBossResult(acertos){
+    if(!isWeekend() || state.bossFight.completedThisWeekend) return;
+    if(isNaN(acertos) || acertos < 0){
+      notify('Aviso do Sistema', 'Informe o número de acertos obtidos.', 'danger');
+      return;
+    }
+    const venceu = acertos >= state.bossFight.targetCorrect;
+    if(venceu) triggerBossVictory(acertos); else triggerBossDefeat(acertos, false);
+  }
+
+  function fleeBossFight(){
+    if(!isWeekend() || state.bossFight.completedThisWeekend) return;
+    triggerBossDefeat(0, true);
+  }
+
+  function triggerBossVictory(acertos){
+    state.bossFight.completedThisWeekend = true;
+    gainExp(100);
+    gainAttr('int', 2);
+    notify('AVISO DO SISTEMA', `🏆 CHEFE DERROTADO! ${acertos}/${state.bossFight.totalQuestions} acertos. Loot: +100 EXP · +2 INT`, 'levelup');
+    saveState(); render();
+  }
+
+  function triggerBossDefeat(acertos, fled){
+    state.bossFight.completedThisWeekend = true;
+    gainAttr('int', -3); pulseAttrDrop('int');
+    gainAttr('str', -2); pulseAttrDrop('str');
+    gainAttr('wis', -2); pulseAttrDrop('wis');
+    subtractExp(50);
+    const msg = fled
+      ? '🏳 Você fugiu da Batalha de Chefe! Penalidade severa aplicada aos atributos e à EXP.'
+      : `💀 DERROTA! ${acertos}/${state.bossFight.totalQuestions} acertos não bateram a meta. Penalidade severa aplicada.`;
+    notify('AVISO DO SISTEMA', msg, 'danger');
+    saveState(); render();
+  }
+
+  // ---- Avanço de dia (sem penalidade) ----
   function startNewDay(){
     checkWeeklyRollover();
-    ['treino','estudos'].forEach(cat => state.tasks[cat].forEach(t => t.done = false));
+    state.tasks.treino.forEach(t => t.done = false);
+    state.tasks.estudos.forEach(t => t.done = false);
 
     applyStartHour(state.cycle.startHour);
     state.cycle.resolved = false;
 
     playSoftChime();
     notify('AVISO DO SISTEMA', 'Um novo dia começou. Missões atualizadas.');
-    save(); render();
+    saveState(); render();
   }
 
+  // ---- Avaliação de fim de ciclo ----
   function resolveCycleEnd(){
     if(state.cycle.resolved) return;
     state.cycle.resolved = true;
@@ -570,26 +1069,30 @@
       startNewDay();
     } else {
       triggerPenalty(incomplete);
-      save(); render();
+      saveState(); render();
     }
   }
 
-  function doubleNumbers(text){
-    return text.replace(/\d+/g, m => String(parseInt(m,10) * 2));
-  }
-
+  // ---- Zona de Penalidade / Missão de Punição Física ----
   function buildPunishmentTasks(){
     if(state.tasks.treino.length === 0){
       return [{ id: cryptoId(), text: 'Missão de Punição Física: 100 Flexões, 40 Agachamentos', done:false }];
     }
-    return state.tasks.treino.map(t => ({ id: cryptoId(), text: doubleNumbers(t.text), done:false }));
+    return state.tasks.treino.map(t => {
+      const s = (t.series||0) * 2, r = (t.repeticoes||0) * 2, iso = (t.isometria||0) * 2;
+      const parts = [];
+      if(s > 0) parts.push(`${s} série${s>1?'s':''}`);
+      if(r > 0) parts.push(`${r} rep.`);
+      if(iso > 0) parts.push(`${iso}s isometria`);
+      return { id: cryptoId(), text: `${t.exercicio} — ${parts.join(' · ')}`, done:false };
+    });
   }
 
   function triggerPenalty(incompleteCategories){
     state.penalty.active = true;
     state.penalty.tasks = buildPunishmentTasks();
 
-    const attrMap = { treino: 'str', estudos: 'int', financas: 'wis' };
+    const attrMap = { treino: 'str', estudos: 'int' };
     let totalExpLoss = 0;
     incompleteCategories.forEach(cat => {
       gainAttr(attrMap[cat], -1);
@@ -611,7 +1114,7 @@
     if(state.penalty.tasks.every(t => t.done)){
       resolvePenalty();
     } else {
-      save(); render();
+      saveState(); render();
     }
   }
 
@@ -628,9 +1131,40 @@
     if(!state.cycle.cycleEnd) applyStartHour(state.cycle.startHour);
     state.cycle.cycleEnd = Date.now() + 400;
     state.cycle.resolved = false;
-    save(); render();
+    saveState(); render();
   }
 
+  /* ======================== 5. ANALYTICS ======================== */
+  // Cada métrica é somada à semana corrente (chave = segunda-feira da semana).
+  function logWeeklyMetric(field, amount){
+    if(amount <= 0) return;
+    const wk = dateKey(mondayOf(new Date()));
+    if(!state.analytics.weekly[wk]){
+      state.analytics.weekly[wk] = { volumeReps:0, isometriaSec:0, topicos:0, focoMinutos:0 };
+    }
+    state.analytics.weekly[wk][field] += amount;
+  }
+
+  function getLastNWeeksData(n){
+    const keys = [];
+    const cur = mondayOf(new Date());
+    for(let i = n-1; i >= 0; i--){
+      const d = new Date(cur);
+      d.setDate(d.getDate() - i*7);
+      keys.push(dateKey(d));
+    }
+    const labels = keys.map(k => { const parts = k.split('-'); return `${parts[2]}/${parts[1]}`; });
+    const get = (k, field) => (state.analytics.weekly[k] ? state.analytics.weekly[k][field] : 0) || 0;
+    return {
+      labels,
+      volumeReps: keys.map(k => get(k,'volumeReps')),
+      isometriaSec: keys.map(k => get(k,'isometriaSec')),
+      topicos: keys.map(k => get(k,'topicos')),
+      focoHoras: keys.map(k => +(get(k,'focoMinutos')/60).toFixed(2))
+    };
+  }
+
+  /* ======================== 6. AUDIO (Web Audio API) ======================== */
   let audioCtx = null;
   let alarmInterval = null;
 
@@ -684,149 +1218,240 @@
     });
   }
 
-  function pad(n){ return n.toString().padStart(2,'0'); }
-  function formatCountdown(ms){
-    if(ms < 0) ms = 0;
-    const totalSec = Math.floor(ms/1000);
-    const h = Math.floor(totalSec/3600);
-    const m = Math.floor((totalSec%3600)/60);
-    const s = totalSec%60;
-    return `${pad(h)}:${pad(m)}:${pad(s)}`;
+  function playPomodoroChime(){
+    ensureAudioCtx();
+    if(!audioCtx) return;
+    [659.25, 783.99, 987.77].forEach((freq, i) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.value = 0.0001;
+      osc.connect(gain).connect(audioCtx.destination);
+      const t0 = audioCtx.currentTime + i * 0.16;
+      gain.gain.exponentialRampToValueAtTime(0.1, t0 + 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.4);
+      osc.start(t0); osc.stop(t0 + 0.45);
+    });
   }
-  function formatDateTime(ts){
-    return new Date(ts).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+
+  /* ======================== 7. CHARTS (Chart.js) ======================== */
+  const chartsAvailable = (typeof Chart !== 'undefined');
+  let strengthChart = null;
+  let studyChart = null;
+
+  function chartBaseOptions(dualAxis){
+    const opts = {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 300 },
+      plugins: { legend: { labels: { color: '#dbe9ff', font: { family: 'Rajdhani', size: 12 } } } },
+      scales: {
+        x: { ticks: { color: '#5f7290' }, grid: { color: 'rgba(22,35,58,.6)' } },
+        y: { ticks: { color: '#5f7290' }, grid: { color: 'rgba(22,35,58,.6)' }, beginAtZero: true }
+      }
+    };
+    if(dualAxis){
+      opts.scales.y1 = { position: 'right', beginAtZero: true, ticks: { color: '#5f7290' }, grid: { drawOnChartArea: false } };
+    }
+    return opts;
   }
+
+  function renderCharts(){
+    if(!chartsAvailable) return;
+    const data = getLastNWeeksData(8);
+
+    if(!strengthChart){
+      strengthChart = new Chart(document.getElementById('chart-strength'), {
+        type: 'line',
+        data: {
+          labels: data.labels,
+          datasets: [
+            { label: 'Volume (reps)', data: data.volumeReps, borderColor: '#ff4d5e', backgroundColor: 'rgba(255,77,94,.15)', tension: .3, yAxisID: 'y' },
+            { label: 'Isometria (s)', data: data.isometriaSec, borderColor: '#35d0ff', backgroundColor: 'rgba(53,208,255,.15)', tension: .3, yAxisID: 'y1' }
+          ]
+        },
+        options: chartBaseOptions(true)
+      });
+    } else {
+      strengthChart.data.labels = data.labels;
+      strengthChart.data.datasets[0].data = data.volumeReps;
+      strengthChart.data.datasets[1].data = data.isometriaSec;
+      strengthChart.update();
+    }
+
+    if(!studyChart){
+      studyChart = new Chart(document.getElementById('chart-study'), {
+        type: 'bar',
+        data: {
+          labels: data.labels,
+          datasets: [
+            { label: 'Tópicos fechados', data: data.topicos, backgroundColor: 'rgba(53,208,255,.55)' },
+            { label: 'Horas focadas', data: data.focoHoras, backgroundColor: 'rgba(185,139,255,.55)' }
+          ]
+        },
+        options: chartBaseOptions(false)
+      });
+    } else {
+      studyChart.data.labels = data.labels;
+      studyChart.data.datasets[0].data = data.topicos;
+      studyChart.data.datasets[1].data = data.focoHoras;
+      studyChart.update();
+    }
+  }
+
+  if(!chartsAvailable){
+    document.querySelectorAll('.chart-box').forEach(el => {
+      el.innerHTML = '<p class="chart-fallback">Gráfico indisponível (sem conexão com o CDN do Chart.js).</p>';
+    });
+  }
+
+  /* ======================== 8. POMODORO (estado transiente) ======================== */
+  // Não é salvo no localStorage: é uma sessão de foco ao vivo. Se a página
+  // recarregar no meio de um bloco, ele simplesmente reinicia.
+  const pomodoro = { totalSec: 0, remainingSec: 0, running: false, hadPause: false, timerId: null };
+
+  function formatMMSS(totalSec){
+    const m = Math.floor(totalSec/60), s = totalSec%60;
+    return pad(m) + ':' + pad(s);
+  }
+
+  function updatePomodoroClock(){
+    document.getElementById('pomodoro-clock').textContent = formatMMSS(pomodoro.remainingSec);
+  }
+
+  function updatePomodoroButtons(){
+    document.getElementById('btn-pomodoro-start').disabled = pomodoro.running;
+    document.getElementById('btn-pomodoro-pause').disabled = !pomodoro.running;
+    document.getElementById('btn-pomodoro-cancel').disabled = pomodoro.remainingSec <= 0 && !pomodoro.running;
+    document.getElementById('btn-pomodoro-pause').textContent = pomodoro.running ? '⏸ Pausar' : '▶ Retomar';
+  }
+
+  function startPomodoro(minutes){
+    if(pomodoro.running) return;
+    if(pomodoro.remainingSec > 0){ resumePomodoro(); return; } // retomando após pausa
+    const mins = minutes > 0 ? minutes : 25;
+    pomodoro.totalSec = mins * 60;
+    pomodoro.remainingSec = pomodoro.totalSec;
+    pomodoro.running = true;
+    pomodoro.hadPause = false;
+    updatePomodoroClock(); updatePomodoroButtons();
+    pomodoro.timerId = setInterval(tickPomodoro, 1000);
+    document.getElementById('pomodoro-meta').textContent = 'Foco em andamento — sem pausas garante o bônus de +1 INT.';
+  }
+
+  function resumePomodoro(){
+    if(pomodoro.running || pomodoro.remainingSec <= 0) return;
+    pomodoro.running = true;
+    pomodoro.timerId = setInterval(tickPomodoro, 1000);
+    updatePomodoroButtons();
+  }
+
+  function tickPomodoro(){
+    pomodoro.remainingSec--;
+    if(pomodoro.remainingSec <= 0){
+      clearInterval(pomodoro.timerId);
+      pomodoro.running = false;
+      finishPomodoro();
+      return;
+    }
+    updatePomodoroClock();
+  }
+
+  function pausePomodoro(){
+    if(!pomodoro.running) return;
+    clearInterval(pomodoro.timerId);
+    pomodoro.running = false;
+    pomodoro.hadPause = true;
+    updatePomodoroButtons();
+    notify('Aviso do Sistema', 'Foco pausado. O bônus de conclusão sem pausas foi perdido.');
+    document.getElementById('pomodoro-meta').textContent = 'Pausado — o bônus de +1 INT não será concedido neste bloco.';
+  }
+
+  function cancelPomodoro(){
+    clearInterval(pomodoro.timerId);
+    pomodoro.totalSec = 0; pomodoro.remainingSec = 0; pomodoro.running = false; pomodoro.hadPause = false;
+    updatePomodoroClock(); updatePomodoroButtons();
+    document.getElementById('pomodoro-meta').textContent = 'Concluir sem pausar concede bônus de +1 INT.';
+  }
+
+  function finishPomodoro(){
+    const minutes = Math.max(1, Math.round(pomodoro.totalSec / 60));
+    logWeeklyMetric('focoMinutos', minutes);
+    playPomodoroChime();
+    if(!pomodoro.hadPause){
+      gainExp(20);
+      gainAttr('int', 1);
+      notify('Aviso do Sistema', `Bloco Pomodoro concluído sem pausas! +20 EXP · +1 INT bônus`, 'levelup');
+    } else {
+      gainExp(8);
+      notify('Aviso do Sistema', `Bloco Pomodoro concluído (com pausas). +8 EXP`);
+    }
+    saveState(); render();
+    pomodoro.totalSec = 0; pomodoro.remainingSec = 0; pomodoro.hadPause = false;
+    updatePomodoroClock(); updatePomodoroButtons();
+    document.getElementById('pomodoro-meta').textContent = 'Concluir sem pausar concede bônus de +1 INT.';
+  }
+
+  /* ======================== 9. RENDER ======================== */
+  const dom = {
+    clock: document.getElementById('clock'),
+    cycleMeta: document.getElementById('cycle-meta'),
+    lvlNum: document.getElementById('lvl-num'),
+    strVal: document.getElementById('str-val'),
+    intVal: document.getElementById('int-val'),
+    wisVal: document.getElementById('wis-val'),
+    expFill: document.getElementById('exp-fill'),
+    expText: document.getElementById('exp-text'),
+    listTreino: document.getElementById('list-treino'),
+    listEstudos: document.getElementById('list-estudos'),
+    listGastos: document.getElementById('list-gastos'),
+    listPunicao: document.getElementById('list-punicao'),
+    listEpic: document.getElementById('list-epic'),
+    listShop: document.getElementById('list-shop'),
+    epicOverallFill: document.getElementById('epic-overall-fill'),
+    epicOverallText: document.getElementById('epic-overall-text'),
+    remainingBox: document.getElementById('remaining-box'),
+    capitalVal: document.getElementById('capital-val'),
+    exemptBanner: document.getElementById('exempt-banner'),
+    goalFill: document.getElementById('goal-fill'),
+    goalProgressText: document.getElementById('goal-progress-text'),
+    goalStatusText: document.getElementById('goal-status-text'),
+    inputStartHour: document.getElementById('input-start-hour'),
+    btnSetStart: document.getElementById('btn-set-start'),
+    btnForceEnd: document.getElementById('btn-force-end'),
+    btnSanctuary: document.getElementById('btn-sanctuary'),
+    sanctuaryStatus: document.getElementById('sanctuary-status'),
+    bossLockedMsg: document.getElementById('boss-locked-msg'),
+    bossBody: document.getElementById('boss-body'),
+    inputBossTotal: document.getElementById('input-boss-total'),
+    inputBossTarget: document.getElementById('input-boss-target'),
+    bossStatus: document.getElementById('boss-status'),
+    btnBossSubmit: document.getElementById('btn-boss-submit'),
+    btnBossFlee: document.getElementById('btn-boss-flee')
+  };
+
+  let lastClockText = null;
 
   function updateClock(){
-    const clockEl = document.getElementById('clock');
-    const metaEl = document.getElementById('cycle-meta');
-
+    let text, className, meta;
     if(state.penalty.active){
-      clockEl.textContent = '00:00:00';
-      clockEl.className = 'clock danger';
-      metaEl.textContent = 'ZONA DE PENALIDADE ATIVA — complete a Missão de Punição Física para liberar um novo ciclo.';
-      return;
+      text = '00:00:00';
+      className = 'clock danger';
+      meta = 'ZONA DE PENALIDADE ATIVA — complete a Missão de Punição Física para liberar um novo ciclo.';
+    } else if(!state.cycle.cycleEnd){
+      text = '24:00:00';
+      className = 'clock';
+      meta = 'Configure o horário de início do dia abaixo.';
+    } else {
+      const remaining = state.cycle.cycleEnd - Date.now();
+      text = formatCountdown(remaining);
+      className = 'clock' + (remaining < 60*60*1000 ? ' warn' : '');
+      meta = `Início: ${formatDateTime(state.cycle.cycleStart)} · Fim: ${formatDateTime(state.cycle.cycleEnd)}`;
     }
-    if(!state.cycle.cycleEnd){
-      clockEl.textContent = '24:00:00';
-      clockEl.className = 'clock';
-      metaEl.textContent = 'Configure o horário de início do dia abaixo.';
-      return;
-    }
-    const remaining = state.cycle.cycleEnd - Date.now();
-    clockEl.textContent = formatCountdown(remaining);
-    clockEl.className = 'clock' + (remaining < 60*60*1000 ? ' warn' : '');
-    metaEl.textContent = `Início: ${formatDateTime(state.cycle.cycleStart)} · Fim: ${formatDateTime(state.cycle.cycleEnd)}`;
-  }
-
-  function render(){
-    document.getElementById('lvl-num').textContent = state.level;
-    document.getElementById('str-val').textContent = state.attrs.str;
-    document.getElementById('int-val').textContent = state.attrs.int;
-    document.getElementById('wis-val').textContent = state.attrs.wis;
-
-    const needed = calcExpNeeded(state.level);
-    const pct = Math.min(100, (state.exp / needed) * 100);
-    document.getElementById('exp-fill').style.width = pct + '%';
-    document.getElementById('exp-text').textContent = `${state.exp} / ${needed}`;
-
-    renderTaskList('treino');
-    renderTaskList('estudos');
-    renderFinancas();
-    renderPunishment();
-    renderWeeklyGoal();
-
-    document.getElementById('input-start-hour').value = state.cycle.startHour;
-    document.getElementById('btn-set-start').disabled = state.penalty.active;
-    document.getElementById('input-start-hour').disabled = state.penalty.active;
-    document.getElementById('btn-force-end').disabled = state.penalty.active;
-
-    updateClock();
-  }
-
-  function renderTaskList(category){
-    const ul = document.getElementById('list-' + category);
-    if(!ul) return;
-    ul.innerHTML = '';
-
-    state.tasks[category].forEach(task => {
-      const li = document.createElement('li');
-      li.className = 'task ' + category + (task.done ? ' done' : '');
-      li.setAttribute('data-id', task.id);
-      li.setAttribute('data-cat', category);
-      li.innerHTML = `
-        <input type="checkbox" ${task.done ? 'checked' : ''} data-task="${task.id}" data-cat="${category}">
-        <span>${escapeHtml(task.text)}</span>
-        <button class="del" data-del="${task.id}" data-cat="${category}" title="Remover missão">✕</button>
-      `;
-      ul.appendChild(li);
-    });
-  }
-
-  function renderFinancas(){
-    const ul = document.getElementById('list-gastos');
-    if(!ul) return;
-    ul.innerHTML = '';
-    
-    let totalGanhos = 0;
-    state.ganhos.forEach(g => { totalGanhos += g.valor; });
-
-    let totalGastos = 0;
-    state.gastos.forEach(g => {
-      totalGastos += g.valor;
-      const li = document.createElement('li');
-      li.className = 'expense';
-      li.style.cssText = 'display:flex; justify-content:space-between; align-items:center; background:var(--panel-alt); border:1px solid var(--line); padding:8px 10px; font-size:14px; margin-bottom:6px;';
-      li.innerHTML = `
-        <span>${escapeHtml(g.nome)}</span>
-        <span class="val" style="color:var(--danger); font-weight:700;">- R$ ${g.valor.toFixed(2)}</span>
-        <button class="del" data-delgasto="${g.id}" title="Remover" style="background:none; border:none; color:var(--muted); cursor:pointer; font-size:16px;">✕</button>
-      `;
-      ul.appendChild(li);
-    });
-
-    // Capital Total = Ganhos menos Gastos
-    const capitalTotal = totalGanhos - totalGastos;
-    const box = document.getElementById('remaining-box');
-    if(box){
-      box.className = 'remaining ' + (capitalTotal >= 0 ? 'ok' : 'warn');
-      document.getElementById('capital-val').textContent = 'R$ ' + capitalTotal.toFixed(2);
-      document.getElementById('capital-val').style.color = capitalTotal >= 0 ? 'var(--good)' : 'var(--danger)';
-    }
-
-    const exemptBanner = document.getElementById('exempt-banner');
-    if(exemptBanner){
-      exemptBanner.style.display = state.finance.exemptionActive ? 'flex' : 'none';
-    }
-  }
-
-  function renderPunishment(){
-    const ul = document.getElementById('list-punicao');
-    if(!ul) return;
-    ul.innerHTML = '';
-    state.penalty.tasks.forEach(t => {
-      const li = document.createElement('li');
-      li.className = 'punish-task' + (t.done ? ' done' : '');
-      li.setAttribute('data-id', t.id);
-      li.innerHTML = `
-        <input type="checkbox" ${t.done ? 'checked' : ''} data-punish="${t.id}">
-        <span>${escapeHtml(t.text)}</span>
-      `;
-      ul.appendChild(li);
-    });
-  }
-
-  function renderWeeklyGoal(){
-    const goal = state.finance.weeklyGoal;
-    const progress = state.finance.weeklyProgress;
-    const pct = goal > 0 ? Math.min(100, (progress/goal)*100) : 0;
-    const goalFill = document.getElementById('goal-fill');
-    const goalProgressText = document.getElementById('goal-progress-text');
-    const goalStatusText = document.getElementById('goal-status-text');
-
-    if(goalFill) goalFill.style.width = pct + '%';
-    if(goalProgressText) goalProgressText.textContent = `R$ ${progress.toFixed(2)} / R$ ${goal.toFixed(2)}`;
-    if(goalStatusText) goalStatusText.textContent = state.finance.exemptionActive ? 'Isento até domingo ✅' : '';
+    if(text !== lastClockText){ dom.clock.textContent = text; lastClockText = text; }
+    dom.clock.className = className;
+    dom.cycleMeta.textContent = meta;
   }
 
   function escapeHtml(str){
@@ -835,120 +1460,164 @@
     return div.innerHTML;
   }
 
-  function addTask(category, text){
-    if(state.penalty.active) return;
-    if(!text || !text.trim()) return;
-    const id = cryptoId();
-    state.tasks[category].push({ id, text: text.trim(), done: false });
-    save(); render();
-    playEnterAnimation(id);
-  }
-
-  function completeTask(category, id){
-    if(state.penalty.active) return;
-    const task = state.tasks[category].find(t => t.id === id);
-    if(!task || task.done) return;
-    task.done = true;
-
-    const attrMap = { treino: 'str', estudos: 'int' };
-    const attr = attrMap[category];
-    if(attr) {
-      gainAttr(attr, 1);
-      gainExp(10);
-      notify('Aviso do Sistema', `Missão Diária Concluída! +10 EXP · +1 ${attr.toUpperCase()}`);
-    }
-
-    save(); render();
-    playCompleteAnimation(id);
-  }
-
-  function deleteTaskAnimated(category, id){
-    if(state.penalty.active) return;
-    const li = document.querySelector(`li[data-id="${id}"]`);
-    const commit = () => { state.tasks[category] = state.tasks[category].filter(t => t.id !== id); save(); render(); };
-    if(li){ li.classList.add('removing'); setTimeout(commit, 220); } else { commit(); }
-  }
-  
-  function addGanho(nome, valor){
-    if(state.penalty.active) return;
-    if(!nome || !nome.trim() || isNaN(valor) || valor <= 0) return;
-    
-    // CONEXÃO DIRETA: O ganho vai para o capital E alimenta a meta semanal automaticamente
-    state.ganhos.push({ id: cryptoId(), nome: nome.trim(), valor: Number(valor) });
-    state.finance.weeklyProgress += Number(valor);
-
-    gainAttr('wis', 1);
-    gainExp(5);
-    evaluateExemption();
-    notify('Aviso do Sistema', `Ganho registrado! Somado ao Capital e à Meta Semanal. +5 EXP · +1 WIS`, 'levelup');
-
-    save(); render();
-  }
-
-  function addGasto(nome, valor){
-    if(state.penalty.active) return;
-    if(!nome || !nome.trim() || isNaN(valor) || valor <= 0) return;
-    state.gastos.push({ id: cryptoId(), nome: nome.trim(), valor: Number(valor) });
-
-    gainAttr('wis', 1);
-    gainExp(5);
-    notify('Aviso do Sistema', `Gasto Registrado: Capital Atualizado · +5 EXP · +1 WIS`);
-
-    save(); render();
-  }
-
-  function deleteGasto(id){
-    if(state.penalty.active) return;
-    state.gastos = state.gastos.filter(g => g.id !== id);
-    save(); render();
-  }
-
-  document.querySelectorAll('button[data-add]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const cat = btn.getAttribute('data-add');
-      const input = document.getElementById('input-' + cat);
-      if(input) {
-        addTask(cat, input.value);
-        input.value = '';
-      }
+  function renderTreino(){
+    dom.listTreino.innerHTML = '';
+    state.tasks.treino.forEach(t => {
+      const li = document.createElement('li');
+      li.className = 'task treino' + (t.done ? ' done' : '');
+      li.setAttribute('data-id', t.id);
+      li.setAttribute('data-cat', 'treino');
+      const subParts = [];
+      if(t.series > 0) subParts.push(`${t.series} série${t.series>1?'s':''}`);
+      if(t.repeticoes > 0) subParts.push(`${t.repeticoes} rep.`);
+      if(t.isometria > 0) subParts.push(`${t.isometria}s isometria`);
+      li.innerHTML = `
+        <input type="checkbox" ${t.done ? 'checked' : ''} data-task="${t.id}" data-cat="treino">
+        <div class="task-main">
+          <span class="task-title">${escapeHtml(t.exercicio)}</span>
+          ${subParts.length ? `<span class="task-sub">${subParts.join(' · ')}</span>` : ''}
+        </div>
+        <button class="del" data-del="${t.id}" data-cat="treino" title="Remover missão">✕</button>
+      `;
+      dom.listTreino.appendChild(li);
     });
-  });
+  }
 
-  ['input-treino','input-estudos'].forEach(id => {
-    const el = document.getElementById(id);
-    if(el){
-      el.addEventListener('keydown', e => {
-        if(e.key === 'Enter'){
-          const cat = id.replace('input-','');
-          addTask(cat, e.target.value);
-          e.target.value = '';
-        }
-      });
-    }
-  });
+  function renderEstudos(){
+    dom.listEstudos.innerHTML = '';
+    state.tasks.estudos.forEach(task => {
+      const li = document.createElement('li');
+      li.className = 'task estudos' + (task.done ? ' done' : '');
+      li.setAttribute('data-id', task.id);
+      li.setAttribute('data-cat', 'estudos');
+      li.innerHTML = `
+        <input type="checkbox" ${task.done ? 'checked' : ''} data-task="${task.id}" data-cat="estudos">
+        <span>${escapeHtml(task.text)}</span>
+        <button class="del" data-del="${task.id}" data-cat="estudos" title="Remover missão">✕</button>
+      `;
+      dom.listEstudos.appendChild(li);
+    });
+  }
 
-  document.body.addEventListener('click', e => {
-    if(e.target.closest('button')) return;
+  function renderEpic(){
+    const blocks = state.epic.blocks;
+    const totalAll = blocks.reduce((s,b) => s + b.totalUnits, 0);
+    const doneAll = blocks.reduce((s,b) => s + b.doneUnits, 0);
+    const pct = totalAll > 0 ? Math.min(100, (doneAll/totalAll)*100) : 0;
 
-    const taskRow = e.target.closest('.task');
-    if(taskRow && !state.penalty.active){
-      const cat = taskRow.getAttribute('data-cat');
-      const id = taskRow.getAttribute('data-id');
-      completeTask(cat, id);
-      return;
-    }
+    dom.epicOverallFill.style.width = pct + '%';
+    dom.epicOverallText.textContent = `Progresso Geral: ${doneAll} / ${totalAll} tópicos (${pct.toFixed(0)}%)`;
 
-    const punishRow = e.target.closest('.punish-task');
-    if(punishRow){
-      completePunishmentTask(punishRow.getAttribute('data-id'));
-      return;
-    }
-  });
+    dom.listEpic.innerHTML = '';
+    blocks.forEach(b => {
+      const bpct = b.totalUnits > 0 ? Math.min(100, (b.doneUnits/b.totalUnits)*100) : 0;
+      const complete = b.totalUnits > 0 && b.doneUnits >= b.totalUnits;
+      const div = document.createElement('div');
+      div.className = 'epic-block' + (complete ? ' complete' : '');
+      div.innerHTML = `
+        <div class="epic-block-head">
+          <span class="epic-block-name">${escapeHtml(b.name)}</span>
+          <span class="epic-block-count">${b.doneUnits} / ${b.totalUnits}${complete ? ' ✅' : ''}</span>
+        </div>
+        <div class="epic-block-track"><div class="epic-block-fill" style="width:${bpct}%"></div></div>
+        <div class="epic-block-controls">
+          <button class="ghost" data-epic-minus="${b.id}">− Tópico</button>
+          <button data-epic-plus="${b.id}" ${complete ? 'disabled' : ''}>+ Tópico</button>
+          <button class="danger-btn" data-epic-del="${b.id}">Remover</button>
+        </div>
+      `;
+      dom.listEpic.appendChild(div);
+    });
+  }
 
-  document.body.addEventListener('click', e => {
-    const delBtn = e.target.closest('button[data-del]');
-    if(delBtn){ deleteTaskAnimated(delBtn.getAttribute('data-cat'), delBtn.getAttribute('data-del')); }
-  });
+  function renderFinancas(){
+    dom.listGastos.innerHTML = '';
+    state.gastos.forEach(g => {
+      const li = document.createElement('li');
+      li.className = 'expense';
+      li.style.cssText = 'display:flex; justify-content:space-between; align-items:center; background:var(--panel-alt); border:1px solid var(--line); padding:8px 10px; font-size:14px; margin-bottom:6px;';
+      li.innerHTML = `
+        <span>${escapeHtml(g.nome)}</span>
+        <span class="val" style="color:var(--danger); font-weight:700;">- R$ ${g.valor.toFixed(2)}</span>
+        <button class="del" data-delgasto="${g.id}" title="Remover" style="background:none; border:none; color:var(--muted); cursor:pointer; font-size:16px;">✕</button>
+      `;
+      dom.listGastos.appendChild(li);
+    });
+
+    const capitalTotal = computeCapital();
+    dom.remainingBox.className = 'remaining ' + (capitalTotal >= 0 ? 'ok' : 'warn');
+    dom.capitalVal.textContent = 'R$ ' + capitalTotal.toFixed(2);
+    dom.capitalVal.style.color = capitalTotal >= 0 ? 'var(--good)' : 'var(--danger)';
+    dom.exemptBanner.style.display = state.finance.exemptionActive ? 'flex' : 'none';
+  }
+
+  function renderShop(){
+    const capital = computeCapital();
+    dom.listShop.innerHTML = '';
+    state.shop.items.forEach(item => {
+      const affordable = capital >= item.cost;
+      const div = document.createElement('div');
+      div.className = 'shop-item';
+      div.innerHTML = `
+        <span class="shop-name">${escapeHtml(item.name)}</span>
+        <span class="shop-cost">R$ ${item.cost.toFixed(2)}</span>
+        <button class="buy" data-buy="${item.id}" ${affordable ? '' : 'disabled'}>Comprar</button>
+        <button class="del-shop" data-del-shop="${item.id}" title="Remover">✕</button>
+      `;
+      dom.listShop.appendChild(div);
+    });
+  }
+
+  function renderPunishment(){
+    dom.listPunicao.innerHTML = '';
+    state.penalty.tasks.forEach(t => {
+      const li = document.createElement('li');
+      li.className = 'punish-task' + (t.done ? ' done' : '');
+      li.setAttribute('data-id', t.id);
+      li.innerHTML = `
+        <input type="checkbox" ${t.done ? 'checked' : ''} data-punish="${t.id}">
+        <span>${escapeHtml(t.text)}</span>
+      `;
+      dom.listPunicao.appendChild(li);
+    });
+  }
+
+  function renderWeeklyGoal(){
+    const goal = state.finance.weeklyGoal;
+    const progress = state.finance.weeklyProgress;
+    const pct = goal > 0 ? Math.min(100, (progress/goal)*100) : 0;
+    dom.goalFill.style.width = pct + '%';
+    dom.goalProgressText.textContent = `R$ ${progress.toFixed(2)} / R$ ${goal.toFixed(2)}`;
+    dom.goalStatusText.textContent = state.finance.exemptionActive ? 'Isento até domingo ✅' : '';
+  }
+
+  function renderSanctuary(){
+    const used = state.sanctuary.usedThisWeek;
+    dom.btnSanctuary.disabled = used || state.penalty.active;
+    dom.sanctuaryStatus.textContent = state.penalty.active
+      ? 'Indisponível durante a Zona de Penalidade.'
+      : (used ? 'Já usado esta semana — libera na segunda-feira.' : 'Disponível: 1 descanso seguro por semana.');
+  }
+
+  function renderBossFight(){
+    const weekend = isWeekend();
+    dom.bossLockedMsg.style.display = weekend ? 'none' : 'block';
+    dom.bossBody.style.display = weekend ? 'block' : 'none';
+    dom.inputBossTotal.value = state.bossFight.totalQuestions;
+    dom.inputBossTarget.value = state.bossFight.targetCorrect;
+
+    const done = state.bossFight.completedThisWeekend;
+    dom.bossStatus.textContent = done ? 'Batalha já enfrentada neste final de semana. Nova chance na próxima segunda.' : '';
+    dom.btnBossSubmit.disabled = done;
+    dom.btnBossFlee.disabled = done;
+  }
+
+  function pulseAttrDrop(attr){
+    const el = document.getElementById('attr-' + attr);
+    if(!el) return;
+    el.classList.add('attr-drop');
+    el.addEventListener('animationend', ()=> el.classList.remove('attr-drop'), { once:true });
+  }
 
   function playCompleteAnimation(id){
     const li = document.querySelector(`li[data-id="${id}"]`);
@@ -963,70 +1632,196 @@
     li.addEventListener('animationend', ()=> li.classList.remove('task-enter'), { once:true });
   }
 
-  const setStartBtn = document.getElementById('btn-set-start');
-  if(setStartBtn){
-    setStartBtn.addEventListener('click', () => {
-      const val = document.getElementById('input-start-hour').value || '06:00';
-      applyStartHour(val);
-      save(); render();
-      notify('Aviso do Sistema', `Ciclo diário configurado para as ${val}. Você tem 24h para concluir as missões.`);
-    });
+  function render(){
+    dom.lvlNum.textContent = state.level;
+    dom.strVal.textContent = state.attrs.str;
+    dom.intVal.textContent = state.attrs.int;
+    dom.wisVal.textContent = state.attrs.wis;
+
+    const needed = calcExpNeeded(state.level);
+    const pct = Math.min(100, (state.exp / needed) * 100);
+    dom.expFill.style.width = pct + '%';
+    dom.expText.textContent = `${state.exp} / ${needed}`;
+
+    renderTreino();
+    renderEstudos();
+    renderEpic();
+    renderFinancas();
+    renderShop();
+    renderPunishment();
+    renderWeeklyGoal();
+    renderSanctuary();
+    renderBossFight();
+    renderCharts();
+
+    dom.inputStartHour.value = state.cycle.startHour;
+    dom.btnSetStart.disabled = state.penalty.active;
+    dom.inputStartHour.disabled = state.penalty.active;
+    dom.btnForceEnd.disabled = state.penalty.active;
+
+    updateClock();
   }
 
-  const forceEndBtn = document.getElementById('btn-force-end');
-  if(forceEndBtn) forceEndBtn.addEventListener('click', forceCycleEnd);
-
-  const silenceAlarmBtn = document.getElementById('btn-silence-alarm');
-  if(silenceAlarmBtn){
-    silenceAlarmBtn.addEventListener('click', () => {
-      stopDangerAlarm();
-      notify('Aviso do Sistema', 'Alarme silenciado. A Missão de Punição Física continua pendente.');
-    });
+  function notify(headline, body, variant){
+    const stack = document.getElementById('notify-stack');
+    const el = document.createElement('div');
+    el.className = 'toast' + (variant ? ' ' + variant : '');
+    el.innerHTML = `<div class="t-head">${headline}</div><div class="t-body">${body}</div>`;
+    stack.appendChild(el);
+    setTimeout(()=>{
+      el.classList.add('fade');
+      setTimeout(()=> el.remove(), 420);
+    }, 3800);
   }
 
-  const setGoalBtn = document.getElementById('btn-set-goal');
-  if(setGoalBtn){
-    setGoalBtn.addEventListener('click', () => {
-      const input = document.getElementById('input-weekly-goal');
-      if(input){
-        setWeeklyGoal(parseFloat(input.value));
-        input.value = '';
-      }
-    });
-  }
+  /* ======================== 10. EVENTS ======================== */
 
-  const btnAddGanho = document.getElementById('btn-add-ganho');
-  if(btnAddGanho){
-    btnAddGanho.addEventListener('click', () => {
-      const nomeEl = document.getElementById('input-ganho-nome');
-      const valorEl = document.getElementById('input-ganho-valor');
-      if(nomeEl && valorEl){
-        addGanho(nomeEl.value, parseFloat(valorEl.value));
-        nomeEl.value = ''; valorEl.value = '';
-      }
-    });
-  }
-
-  const btnAddGasto = document.getElementById('btn-add-gasto');
-  if(btnAddGasto){
-    btnAddGasto.addEventListener('click', () => {
-      const nomeEl = document.getElementById('input-gasto-nome');
-      const valorEl = document.getElementById('input-gasto-valor');
-      if(nomeEl && valorEl){
-        addGasto(nomeEl.value, parseFloat(valorEl.value));
-        nomeEl.value = ''; valorEl.value = '';
-      }
-    });
-  }
-
-  document.body.addEventListener('click', e => {
-    const delGasto = e.target.closest('button[data-delgasto]');
-    if(delGasto){ deleteGasto(delGasto.getAttribute('data-delgasto')); }
+  document.getElementById('btn-add-treino').addEventListener('click', () => {
+    const exercicioEl = document.getElementById('input-treino-exercicio');
+    const seriesEl = document.getElementById('input-treino-series');
+    const repsEl = document.getElementById('input-treino-reps');
+    const isoEl = document.getElementById('input-treino-isometria');
+    addTreinoTask(
+      exercicioEl.value,
+      parseInt(seriesEl.value, 10) || 0,
+      parseInt(repsEl.value, 10) || 0,
+      parseInt(isoEl.value, 10) || 0
+    );
+    exercicioEl.value = ''; seriesEl.value = ''; repsEl.value = ''; isoEl.value = '';
   });
 
+  document.querySelectorAll('button[data-add]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const cat = btn.getAttribute('data-add');
+      const input = document.getElementById('input-' + cat);
+      if(input){ addTask(cat, input.value); input.value = ''; }
+    });
+  });
+  const inputEstudos = document.getElementById('input-estudos');
+  if(inputEstudos){
+    inputEstudos.addEventListener('keydown', e => {
+      if(e.key === 'Enter'){ addTask('estudos', e.target.value); e.target.value = ''; }
+    });
+  }
+
+  document.getElementById('btn-add-epic').addEventListener('click', () => {
+    const nameEl = document.getElementById('input-epic-name');
+    const totalEl = document.getElementById('input-epic-total');
+    addEpicBlock(nameEl.value, parseFloat(totalEl.value));
+    nameEl.value = ''; totalEl.value = '';
+  });
+
+  // clique na linha inteira da missão (treino/estudos) alterna concluído
+  document.body.addEventListener('click', e => {
+    if(e.target.closest('button')) return;
+
+    const taskRow = e.target.closest('.task');
+    if(taskRow && !state.penalty.active){
+      completeTask(taskRow.getAttribute('data-cat'), taskRow.getAttribute('data-id'));
+      return;
+    }
+    const punishRow = e.target.closest('.punish-task');
+    if(punishRow){ completePunishmentTask(punishRow.getAttribute('data-id')); return; }
+  });
+
+  document.body.addEventListener('click', e => {
+    const delBtn = e.target.closest('button[data-del]');
+    if(delBtn){ deleteTaskAnimated(delBtn.getAttribute('data-cat'), delBtn.getAttribute('data-del')); return; }
+
+    const delGasto = e.target.closest('button[data-delgasto]');
+    if(delGasto){ deleteGasto(delGasto.getAttribute('data-delgasto')); return; }
+
+    const epicPlus = e.target.closest('button[data-epic-plus]');
+    if(epicPlus){ incrementEpicBlock(epicPlus.getAttribute('data-epic-plus')); return; }
+
+    const epicMinus = e.target.closest('button[data-epic-minus]');
+    if(epicMinus){ decrementEpicBlock(epicMinus.getAttribute('data-epic-minus')); return; }
+
+    const epicDel = e.target.closest('button[data-epic-del]');
+    if(epicDel){ deleteEpicBlock(epicDel.getAttribute('data-epic-del')); return; }
+
+    const buyBtn = e.target.closest('button[data-buy]');
+    if(buyBtn){ buyShopItem(buyBtn.getAttribute('data-buy')); return; }
+
+    const delShop = e.target.closest('button[data-del-shop]');
+    if(delShop){ deleteShopItem(delShop.getAttribute('data-del-shop')); return; }
+  });
+
+  dom.btnSetStart.addEventListener('click', () => {
+    const val = dom.inputStartHour.value || '06:00';
+    applyStartHour(val);
+    saveState(); render();
+    notify('Aviso do Sistema', `Ciclo diário configurado para as ${val}. Você tem 24h para concluir as missões.`);
+  });
+
+  dom.btnForceEnd.addEventListener('click', forceCycleEnd);
+  dom.btnSanctuary.addEventListener('click', useSanctuary);
+
+  document.getElementById('btn-silence-alarm').addEventListener('click', () => {
+    stopDangerAlarm();
+    notify('Aviso do Sistema', 'Alarme silenciado. A Missão de Punição Física continua pendente.');
+  });
+
+  document.getElementById('btn-set-goal').addEventListener('click', () => {
+    const input = document.getElementById('input-weekly-goal');
+    setWeeklyGoal(parseFloat(input.value));
+    input.value = '';
+  });
+
+  document.getElementById('btn-add-ganho').addEventListener('click', () => {
+    const nomeEl = document.getElementById('input-ganho-nome');
+    const valorEl = document.getElementById('input-ganho-valor');
+    addGanho(nomeEl.value, parseFloat(valorEl.value));
+    nomeEl.value = ''; valorEl.value = '';
+  });
+
+  document.getElementById('btn-add-gasto').addEventListener('click', () => {
+    const nomeEl = document.getElementById('input-gasto-nome');
+    const valorEl = document.getElementById('input-gasto-valor');
+    addGasto(nomeEl.value, parseFloat(valorEl.value));
+    nomeEl.value = ''; valorEl.value = '';
+  });
+
+  document.getElementById('btn-add-shop').addEventListener('click', () => {
+    const nameEl = document.getElementById('input-shop-name');
+    const costEl = document.getElementById('input-shop-cost');
+    addShopItem(nameEl.value, parseFloat(costEl.value));
+    nameEl.value = ''; costEl.value = '';
+  });
+
+  document.getElementById('btn-save-boss-config').addEventListener('click', () => {
+    saveBossConfig(parseFloat(dom.inputBossTotal.value), parseFloat(dom.inputBossTarget.value));
+  });
+  document.getElementById('btn-boss-submit').addEventListener('click', () => {
+    const input = document.getElementById('input-boss-acertos');
+    submitBossResult(parseInt(input.value, 10));
+    input.value = '';
+  });
+  document.getElementById('btn-boss-flee').addEventListener('click', fleeBossFight);
+
+  document.getElementById('btn-pomodoro-start').addEventListener('click', () => {
+    const minEl = document.getElementById('input-pomodoro-min');
+    startPomodoro(parseInt(minEl.value, 10) || 25);
+  });
+  document.getElementById('btn-pomodoro-pause').addEventListener('click', () => {
+    if(pomodoro.running) pausePomodoro(); else resumePomodoro();
+  });
+  document.getElementById('btn-pomodoro-cancel').addEventListener('click', cancelPomodoro);
+
+  document.getElementById('btn-export').addEventListener('click', exportSave);
+  document.getElementById('btn-import-trigger').addEventListener('click', () => {
+    document.getElementById('input-import-file').click();
+  });
+  document.getElementById('input-import-file').addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    importSaveFromFile(file);
+    e.target.value = ''; // permite reimportar o mesmo arquivo depois, se preciso
+  });
+
+  /* ======================== 11. INIT ======================== */
   if(!state.cycle.cycleStart || !state.cycle.cycleEnd){
     applyStartHour(state.cycle.startHour);
-    save();
+    saveState();
   }
   checkWeeklyRollover();
   if(state.penalty.active){
@@ -1034,6 +1829,8 @@
     startDangerAlarm();
   }
 
+  updatePomodoroClock();
+  updatePomodoroButtons();
   render();
 
   setInterval(() => {
